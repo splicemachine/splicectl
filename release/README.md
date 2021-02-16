@@ -12,6 +12,7 @@
 - Review changelogs/releases/${RELEASE_VERSION}.md
 - Create and Merge PR
   - If there were fragments ensure that they have been deleted and only 00_template.yaml remains.
+    - `git add -A; git commit -m "RELEASE of ${RELEASE_VERSION}"; git push origin RELEASE_${RELEASE_VERSION}`
 - Pull main
   - `git checkout main; git fetch; git pull`
 - Perform the release
