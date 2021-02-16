@@ -1,0 +1,21 @@
+# RELEASE Process
+
+- export RELEASE_VERSION={newSemVer}
+  - where {newSemVer} is in the form of `v0.1.0`
+- Create a new branch for release.
+  - `git checkout -b RELEASE_${RELEASE_VERSION}`
+- Check to see if there are any ./changelog/fragments/*.md files
+  - If there are files other than the template
+    - make changelog  (# from the source root)
+  - If there are no files other than the template
+    - create a ./changelog/releases/${RELEASE_VERSION}.md for the release.
+- Review changelogs/releases/${RELEASE_VERSION}.md
+- Create and Merge PR
+  - If there were fragments ensure that they have been deleted and only 00_template.yaml remains.
+- Pull main
+  - `git checkout main; git fetch; git pull`
+- Perform the release
+  - `git tag ${RELEASE_VERSION}`
+  - `git push origin ${RELEASE_VERSION}`
+- Check to see if Release GitHub Action kicks off
+- Check splicemachine/splicectl Releases Page, and splicemachine/homebrew-utility/Formula/splicectl.rb

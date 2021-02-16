@@ -1,0 +1,95 @@
+package cmd
+
+import (
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"strings"
+
+	"github.com/go-resty/resty/v2"
+	"github.com/sirupsen/logrus"
+	"github.com/splicemachine/splicectl/cmd/objects"
+	"github.com/splicemachine/splicectl/common"
+
+	"github.com/spf13/cobra"
+)
+
+var applyCMSettingsCmd = &cobra.Command{
+	Use:   "cm-settings",
+	Short: "Submit new cm (cloud manager) settings to the cluster.",
+	Long: `EXAMPLES
+	splicectl get cm-settings --component ui -o json > ~/tmp/cm-ui.json
+	#edit file
+	splicectl apply cm-settings --component --file ~/tmp/cm-ui.json
+`,
+	Run: func(cmd *cobra.Command, args []string) {
+		component, _ := cmd.Flags().GetString("component")
+
+		component = strings.ToLower(component)
+		if len(component) == 0 || !strings.Contains("ui api", component) {
+			logrus.Fatal("--component needs to be 'ui' or 'api'")
+		}
+		filePath, _ := cmd.Flags().GetString("file")
+		fileBytes, _ := ioutil.ReadFile(filePath)
+
+		jsonBytes, cerr := common.WantJSON(fileBytes)
+		if cerr != nil {
+			logrus.Fatal("The input data MUST be in either JSON or YAML format")
+		}
+
+		out, err := setCMSettings(component, jsonBytes)
+		if err != nil {
+			logrus.WithError(err).Error("Error setting System Settings")
+		}
+		var vvData objects.VaultVersion
+		marshErr := json.Unmarshal([]byte(out), &vvData)
+		if marshErr != nil {
+			logrus.Fatal("Could not unmarshall data", marshErr)
+		}
+
+		if !formatOverridden {
+			outputFormat = "text"
+		}
+
+		switch strings.ToLower(outputFormat) {
+		case "json":
+			vvData.ToJSON()
+		case "gron":
+			vvData.ToGRON()
+		case "yaml":
+			vvData.ToYAML()
+		case "text", "table":
+			vvData.ToTEXT(noHeaders)
+		}
+
+	},
+}
+
+func setCMSettings(comp string, in []byte) (string, error) {
+	restClient := resty.New()
+	uri := fmt.Sprintf("splicectl/v1/vault/cmsettings?component=%s", comp)
+	resp, resperr := restClient.R().
+		SetHeader("X-Token-Bearer", authClient.GetTokenBearer()).
+		SetHeader("X-Token-Session", authClient.GetSessionID()).
+		SetBody(in).
+		SetResult(&AuthSuccess{}). // or SetResult(AuthSuccess{}).
+		SetError(&AuthError{}).    // or SetError(AuthError{}).
+		Post(fmt.Sprintf("%s/%s", apiServer, uri))
+
+	if resperr != nil {
+		logrus.WithError(resperr).Error("Error setting System Settings")
+		return "", resperr
+	}
+
+	return string(resp.Body()[:]), nil
+
+}
+
+func init() {
+	applyCmd.AddCommand(applyCMSettingsCmd)
+
+	applyCMSettingsCmd.Flags().String("file", "", "Specify the input file")
+	applyCMSettingsCmd.Flags().StringP("component", "c", "", "Specify the component, <ui|api>")
+	applyCMSettingsCmd.MarkFlagRequired("file")
+
+}
