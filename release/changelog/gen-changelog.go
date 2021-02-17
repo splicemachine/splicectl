@@ -8,10 +8,10 @@ import (
 	"github.com/blang/semver/v4"
 	log "github.com/sirupsen/logrus"
 
-	util "splice-cloud-util/release/changelog/internal"
+	util "github.com/splicemachine/splicectl/release/changelog/internal"
 )
 
-const repo = "github.com/splicemaahs/splice-cloud-util"
+const repo = "github.com/splicemachine/splicectl"
 
 func main() {
 	var (
