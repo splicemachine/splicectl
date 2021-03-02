@@ -1,0 +1,95 @@
+package cmd
+
+import (
+	"encoding/json"
+	"fmt"
+
+	"github.com/go-resty/resty/v2"
+	"github.com/sirupsen/logrus"
+	"github.com/spf13/cobra"
+	"github.com/splicemachine/splicectl/cmd/objects"
+)
+
+var resumeCmd = &cobra.Command{
+	Use:   "resume",
+	Args:  cobra.MinimumNArgs(0),
+	Short: "Resume Cluster Databases",
+	Long: `EXAMPLES
+	splicectl list databases
+	splicectl resume --database-name <database> --message "<message>"`,
+	Run: func(cmd *cobra.Command, args []string) {
+		var dberr error
+		message, _ := cmd.Flags().GetString("message")
+		databaseName, _ := cmd.Flags().GetString("database-name")
+		if len(databaseName) == 0 {
+			databaseName, dberr = promptForDatabaseName()
+			if dberr != nil {
+				logrus.Fatal("Could not get a list of Databases", dberr)
+			}
+		}
+		if isDatabasePaused(databaseName) {
+			out, err := resumeDatabase(databaseName, message)
+			if err != nil {
+				logrus.Warn("Resuming database failed.")
+			}
+			fmt.Println(out)
+		} else {
+			logrus.Warn("The database is not listed as Paused, not resuming")
+		}
+
+	},
+}
+
+func isDatabasePaused(db string) bool {
+	dbJSON, err := getDatabaseList()
+	if err != nil {
+		logrus.WithError(err).Fatal("Error retreiving ClusterId list")
+	}
+	var dbList objects.DatabaseList
+
+	marshErr := json.Unmarshal([]byte(dbJSON), &dbList)
+	if marshErr != nil {
+		logrus.Fatal("Could not unmarshall database list for ClusterId", marshErr)
+	}
+
+	for _, v := range dbList.Clusters {
+		if v.DcosAppId == db {
+			if v.Status == "Paused" {
+				return true
+			}
+			return false
+		}
+	}
+	return false
+}
+
+func resumeDatabase(db string, msg string) (string, error) {
+	restClient := resty.New()
+
+	uri := "splicectl/v1/splicedb/splicedatabaseresume"
+
+	var resp *resty.Response
+	var resperr error
+
+	reqJSON := fmt.Sprintf("{ \"appId\": \"%s\", \"message\": \"%s\" }", db, msg)
+	resp, resperr = restClient.R().
+		SetHeader("Content-Type", "application/json").
+		SetHeader("Accept", "application/json").
+		SetHeader("X-Token-Bearer", authClient.GetTokenBearer()).
+		SetHeader("X-Token-Session", authClient.GetSessionID()).
+		SetBody(reqJSON).
+		Post(fmt.Sprintf("%s/%s", apiServer, uri))
+	if resperr != nil {
+		logrus.WithError(resperr).Error("Error getting Default CR Info")
+		return "", resperr
+	}
+
+	return string(resp.Body()[:]), nil
+
+}
+
+func init() {
+	rootCmd.AddCommand(resumeCmd)
+	resumeCmd.Flags().StringP("database-name", "d", "", "Specify the Splice Machine Database to Pause")
+	resumeCmd.Flags().StringP("message", "m", "", "Add a message to the database log")
+}

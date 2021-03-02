@@ -25,12 +25,12 @@ var getDatabaseStatus = &cobra.Command{
 			}
 		}
 
-		out, err := getDatabaseStatusData( databaseName)
+		out, err := getDatabaseStatusData(databaseName)
 		if err != nil {
 			logrus.WithError(err).Error("Error getting status of database ")
 		}
 
-	    fmt.Println(out)
+		fmt.Println(out)
 
 	},
 }
@@ -56,9 +56,5 @@ func getDatabaseStatusData(databaseName string) (string, error) {
 
 func init() {
 	getCmd.AddCommand(getDatabaseStatus)
-
 	getDatabaseStatus.Flags().StringP("database-name", "d", "", "Specify the database name")
-
-	getDatabaseStatus.MarkFlagRequired("database-name")
-
 }

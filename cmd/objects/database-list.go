@@ -118,7 +118,7 @@ func (databaseList *DatabaseList) ToTEXT(noHeaders bool) error {
 	// ******************** TableWriter *******************************
 	table := tablewriter.NewWriter(os.Stdout)
 	if !noHeaders {
-		table.SetHeader([]string{"DATABASE", "NAMESPACE", "STATUS"})
+		table.SetHeader([]string{"DATABASE", "NAMESPACE", "STATUS", "CLUSTER_ID"})
 		table.SetHeaderAlignment(tablewriter.ALIGN_LEFT)
 	}
 	table.SetAutoWrapText(false)
@@ -132,9 +132,8 @@ func (databaseList *DatabaseList) ToTEXT(noHeaders bool) error {
 	table.SetTablePadding("\t") // pad with tabs
 	table.SetNoWhiteSpace(true)
 	for _, v := range databaseList.Clusters {
-		row = []string{v.DcosAppId, v.Namespace, v.Status}
+		row = []string{v.DcosAppId, v.Namespace, v.Status, v.ClusterId}
 		table.Append(row)
-
 	}
 	table.Render()
 

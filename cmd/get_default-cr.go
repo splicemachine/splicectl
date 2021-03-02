@@ -27,7 +27,6 @@ var getDefaultCRCmd = &cobra.Command{
 			logrus.WithError(err).Error("Error getting Default CR Info")
 		}
 
-		fmt.Println(out)
 		var defaultCr map[string]interface{}
 
 		marshErr := json.Unmarshal([]byte(out), &defaultCr)
