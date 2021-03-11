@@ -20,6 +20,8 @@ var versionCmd = &cobra.Command{
 		}
 
 		switch strings.ToLower(outputFormat) {
+		case "raw":
+			fmt.Println(versionJSON)
 		case "json":
 			// We want to print the JSON in a condensed format
 			fmt.Println(versionJSON)
