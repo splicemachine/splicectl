@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"os"
 	"strings"
 
+	"github.com/blang/semver/v4"
 	"github.com/go-resty/resty/v2"
 	"github.com/maahsome/gron"
 	"github.com/sirupsen/logrus"
@@ -21,6 +23,11 @@ var getVaultKeyCmd = &cobra.Command{
 	splicectl get vault-key --keypath services/cloudmanager/config/default/ui -o json > ~/tmp/cm-ui.json
 	`,
 	Run: func(cmd *cobra.Command, args []string) {
+
+		var sv semver.Version
+
+		_, sv = versionDetail.RequirementMet("get_vault-key")
+
 		keyPath, _ := cmd.Flags().GetString("keypath")
 		if strings.HasPrefix(keyPath, "secrets/") {
 			keyPath = strings.TrimPrefix(keyPath, "secrets/")
@@ -30,41 +37,68 @@ var getVaultKeyCmd = &cobra.Command{
 		if err != nil {
 			logrus.WithError(err).Error("Error getting Default CR Info")
 		}
-		// fmt.Println(out)
-		var vaultKey map[string]interface{}
 
-		marshErr := json.Unmarshal([]byte(out), &vaultKey)
-		if marshErr != nil {
-			logrus.Fatal("Could not unmarshall data", marshErr)
-		}
-
-		if !formatOverridden {
-			outputFormat = "yaml"
-		}
-
-		switch strings.ToLower(outputFormat) {
-		case "json":
-			fmt.Println(string(out[:]))
-		case "gron":
-			subReader := strings.NewReader(string(out[:]))
-			subValues := &bytes.Buffer{}
-			ges := gron.NewGron(subReader, subValues)
-			ges.SetMonochrome(false)
-			serr := ges.ToGron()
-			if serr != nil {
-				logrus.Error("Problem generating gron syntax", serr)
-			} else {
-				fmt.Println(string(subValues.Bytes()))
+		if semverV1, err := semver.ParseRange(">=0.0.14 <0.0.17"); err != nil {
+			logrus.Fatal("Failed to parse SemVer")
+		} else {
+			if semverV1(sv) {
+				displayGetVaultKeyV1(out)
 			}
-		case "yaml", "text", "table":
-			rawVaultKey, crerr := yaml.Marshal(vaultKey)
-			if crerr != nil {
-				logrus.WithError(crerr).Error("Failed to convert to YAML")
-			}
-			fmt.Println(string(rawVaultKey[:]))
 		}
 
+		if semverV2, err := semver.ParseRange(">=0.0.17"); err != nil {
+			logrus.Fatal("Failed to parse SemVer")
+		} else {
+			if semverV2(sv) {
+				displayGetVaultKeyV2(out)
+			}
+		}
 	},
+}
+
+func displayGetVaultKeyV1(in string) {
+	fmt.Println(in)
+	os.Exit(0)
+}
+
+func displayGetVaultKeyV2(in string) {
+	if strings.ToLower(outputFormat) == "raw" {
+		fmt.Println(in)
+		os.Exit(0)
+	}
+	var vaultKey map[string]interface{}
+
+	marshErr := json.Unmarshal([]byte(in), &vaultKey)
+	if marshErr != nil {
+		logrus.Fatal("Could not unmarshall data", marshErr)
+	}
+
+	if !formatOverridden {
+		outputFormat = "yaml"
+	}
+
+	switch strings.ToLower(outputFormat) {
+	case "json":
+		fmt.Println(string(in[:]))
+	case "gron":
+		subReader := strings.NewReader(string(in[:]))
+		subValues := &bytes.Buffer{}
+		ges := gron.NewGron(subReader, subValues)
+		ges.SetMonochrome(false)
+		serr := ges.ToGron()
+		if serr != nil {
+			logrus.Error("Problem generating gron syntax", serr)
+		} else {
+			fmt.Println(string(subValues.Bytes()))
+		}
+	case "yaml", "text", "table":
+		rawVaultKey, crerr := yaml.Marshal(vaultKey)
+		if crerr != nil {
+			logrus.WithError(crerr).Error("Failed to convert to YAML")
+		}
+		fmt.Println(string(rawVaultKey[:]))
+	}
+
 }
 
 func getVaultKeyData(keypath string, ver int) (string, error) {

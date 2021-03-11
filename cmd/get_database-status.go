@@ -2,7 +2,9 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 
+	"github.com/blang/semver/v4"
 	"github.com/go-resty/resty/v2"
 	"github.com/sirupsen/logrus"
 
@@ -17,6 +19,10 @@ var getDatabaseStatus = &cobra.Command{
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		var dberr error
+		var sv semver.Version
+
+		_, sv = versionDetail.RequirementMet("get_database-status")
+
 		databaseName, _ := cmd.Flags().GetString("database-name")
 		if len(databaseName) == 0 {
 			databaseName, dberr = promptForDatabaseName()
@@ -30,9 +36,19 @@ var getDatabaseStatus = &cobra.Command{
 			logrus.WithError(err).Error("Error getting status of database ")
 		}
 
-		fmt.Println(out)
-
+		if semverV1, err := semver.ParseRange(">=0.1.6"); err != nil {
+			logrus.Fatal("Failed to parse SemVer")
+		} else {
+			if semverV1(sv) {
+				displayGetDatabaseStatusV1(out)
+			}
+		}
 	},
+}
+
+func displayGetDatabaseStatusV1(in string) {
+	fmt.Println(in)
+	os.Exit(0)
 }
 
 func getDatabaseStatusData(databaseName string) (string, error) {

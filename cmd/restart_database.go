@@ -3,8 +3,10 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"strings"
 
+	"github.com/blang/semver/v4"
 	"github.com/go-resty/resty/v2"
 	"github.com/sirupsen/logrus"
 	"github.com/splicemachine/splicectl/cmd/objects"
@@ -21,6 +23,10 @@ var restartDatabaseCmd = &cobra.Command{
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		var dberr error
+		var sv semver.Version
+
+		_, sv = versionDetail.RequirementMet("restart_database")
+
 		databaseName, _ := cmd.Flags().GetString("database-name")
 		forceRestart, _ := cmd.Flags().GetBool("force")
 		if len(databaseName) == 0 {
@@ -33,28 +39,42 @@ var restartDatabaseCmd = &cobra.Command{
 		if err != nil {
 			logrus.WithError(err).Error("Error restarting database")
 		}
-		var asData objects.ActionStatus
-		marshErr := json.Unmarshal([]byte(out), &asData)
-		if marshErr != nil {
-			logrus.Fatal("Could not unmarshall data", marshErr)
-		}
 
-		if !formatOverridden {
-			outputFormat = "text"
+		if semverV1, err := semver.ParseRange(">=0.1.6"); err != nil {
+			logrus.Fatal("Failed to parse SemVer")
+		} else {
+			if semverV1(sv) {
+				displayRestartDatabaseV1(out)
+			}
 		}
-
-		switch strings.ToLower(outputFormat) {
-		case "json":
-			asData.ToJSON()
-		case "gron":
-			asData.ToGRON()
-		case "yaml":
-			asData.ToYAML()
-		case "text", "table":
-			asData.ToTEXT(noHeaders)
-		}
-
 	},
+}
+
+func displayRestartDatabaseV1(in string) {
+	if strings.ToLower(outputFormat) == "raw" {
+		fmt.Println(in)
+		os.Exit(0)
+	}
+	var asData objects.ActionStatus
+	marshErr := json.Unmarshal([]byte(in), &asData)
+	if marshErr != nil {
+		logrus.Fatal("Could not unmarshall data", marshErr)
+	}
+
+	if !formatOverridden {
+		outputFormat = "text"
+	}
+
+	switch strings.ToLower(outputFormat) {
+	case "json":
+		asData.ToJSON()
+	case "gron":
+		asData.ToGRON()
+	case "yaml":
+		asData.ToYAML()
+	case "text", "table":
+		asData.ToTEXT(noHeaders)
+	}
 }
 
 func restartDatabase(dbname string, force bool) (string, error) {

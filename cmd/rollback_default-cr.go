@@ -3,8 +3,10 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"strings"
 
+	"github.com/blang/semver/v4"
 	"github.com/go-resty/resty/v2"
 	"github.com/sirupsen/logrus"
 
@@ -20,33 +22,65 @@ var rollbackDefaultCRCmd = &cobra.Command{
 	splicectl rollback default-cr --version 1
 `,
 	Run: func(cmd *cobra.Command, args []string) {
+
+		var sv semver.Version
+
+		_, sv = versionDetail.RequirementMet("rollback_default-cr")
+
 		version, _ := cmd.Flags().GetInt("version")
 		out, err := rollbackDefaultCR(version)
 		if err != nil {
 			logrus.WithError(err).Error("Error getting Default CR Info")
 		}
-		var vvData objects.VaultVersion
-		marshErr := json.Unmarshal([]byte(out), &vvData)
-		if marshErr != nil {
-			logrus.Fatal("Could not unmarshall data", marshErr)
+
+		if semverV1, err := semver.ParseRange(">=0.0.15 <0.0.17"); err != nil {
+			logrus.Fatal("Failed to parse SemVer")
+		} else {
+			if semverV1(sv) {
+				displayRollbackDefaultCRV1(out)
+			}
 		}
 
-		if !formatOverridden {
-			outputFormat = "text"
+		if semverV2, err := semver.ParseRange(">=0.0.17"); err != nil {
+			logrus.Fatal("Failed to parse SemVer")
+		} else {
+			if semverV2(sv) {
+				displayRollbackDefaultCRV2(out)
+			}
 		}
-
-		switch strings.ToLower(outputFormat) {
-		case "json":
-			vvData.ToJSON()
-		case "gron":
-			vvData.ToGRON()
-		case "yaml":
-			vvData.ToYAML()
-		case "text", "table":
-			vvData.ToTEXT(noHeaders)
-		}
-
 	},
+}
+
+func displayRollbackDefaultCRV1(in string) {
+	fmt.Println(in)
+	os.Exit(0)
+}
+
+func displayRollbackDefaultCRV2(in string) {
+	if strings.ToLower(outputFormat) == "raw" {
+		fmt.Println(in)
+		os.Exit(0)
+	}
+	var vvData objects.VaultVersion
+	marshErr := json.Unmarshal([]byte(in), &vvData)
+	if marshErr != nil {
+		logrus.Fatal("Could not unmarshall data", marshErr)
+	}
+
+	if !formatOverridden {
+		outputFormat = "text"
+	}
+
+	switch strings.ToLower(outputFormat) {
+	case "json":
+		vvData.ToJSON()
+	case "gron":
+		vvData.ToGRON()
+	case "yaml":
+		vvData.ToYAML()
+	case "text", "table":
+		vvData.ToTEXT(noHeaders)
+	}
 }
 
 func rollbackDefaultCR(ver int) (string, error) {

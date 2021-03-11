@@ -3,8 +3,10 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"strings"
 
+	"github.com/blang/semver/v4"
 	"github.com/go-resty/resty/v2"
 	"github.com/sirupsen/logrus"
 	"github.com/splicemachine/splicectl/cmd/objects"
@@ -21,6 +23,10 @@ var getDatabaseCRCmd = &cobra.Command{
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		var dberr error
+		var sv semver.Version
+
+		_, sv = versionDetail.RequirementMet("get_database-cr")
+
 		databaseName, _ := cmd.Flags().GetString("database-name")
 		if len(databaseName) == 0 {
 			databaseName, dberr = promptForDatabaseName()
@@ -36,27 +42,58 @@ var getDatabaseCRCmd = &cobra.Command{
 			logrus.WithError(err).Error("Error getting Database CR Info")
 		}
 
-		var dbCR objects.DatabaseCR
-		marshErr := json.Unmarshal([]byte(out), &dbCR)
-		if marshErr != nil {
-			logrus.Fatal("Could not unmarshall data", marshErr)
+		if semverV1, err := semver.ParseRange(">=0.0.14 <0.0.17"); err != nil {
+			logrus.Fatal("Failed to parse SemVer")
+		} else {
+			if semverV1(sv) {
+				displayGetDatabaseV1(out, filePath)
+			}
 		}
 
-		if !formatOverridden {
-			outputFormat = "yaml"
-		}
-
-		switch strings.ToLower(outputFormat) {
-		case "json":
-			dbCR.ToJSON(filePath)
-		case "gron":
-			dbCR.ToGRON(filePath)
-		case "yaml":
-			dbCR.ToYAML(filePath)
-		case "text", "table":
-			dbCR.ToTEXT(noHeaders)
+		if semverV2, err := semver.ParseRange(">=0.0.17"); err != nil {
+			logrus.Fatal("Failed to parse SemVer")
+		} else {
+			if semverV2(sv) {
+				displayGetDatabaseV2(out, filePath)
+			}
 		}
 	},
+}
+
+func displayGetDatabaseV1(in string, fp string) {
+	if len(fp) == 0 {
+		fmt.Println(in)
+	} else {
+		objects.WriteToFile(fp, in)
+	}
+	os.Exit(0)
+}
+func displayGetDatabaseV2(in string, fp string) {
+	if strings.ToLower(outputFormat) == "raw" {
+		fmt.Println(in)
+		os.Exit(0)
+	}
+	var dbCR objects.DatabaseCR
+	marshErr := json.Unmarshal([]byte(in), &dbCR)
+	if marshErr != nil {
+		logrus.Fatal("Could not unmarshall data", marshErr)
+	}
+
+	if !formatOverridden {
+		outputFormat = "yaml"
+	}
+
+	switch strings.ToLower(outputFormat) {
+	case "json":
+		dbCR.ToJSON(fp)
+	case "gron":
+		dbCR.ToGRON(fp)
+	case "yaml":
+		dbCR.ToYAML(fp)
+	case "text", "table":
+		dbCR.ToTEXT(noHeaders)
+	}
+
 }
 
 func getDatabaseCR(dbname string, ver int) (string, error) {

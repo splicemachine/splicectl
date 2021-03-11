@@ -3,8 +3,10 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"strings"
 
+	"github.com/blang/semver/v4"
 	"github.com/go-resty/resty/v2"
 	"github.com/sirupsen/logrus"
 	"github.com/splicemachine/splicectl/cmd/objects"
@@ -20,6 +22,10 @@ var getImageTag = &cobra.Command{
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		var dberr error
+		var sv semver.Version
+
+		_, sv = versionDetail.RequirementMet("get_image-tag")
+
 		componentName, _ := cmd.Flags().GetString("component-name")
 		databaseName, _ := cmd.Flags().GetString("database-name")
 		if len(databaseName) == 0 {
@@ -34,33 +40,61 @@ var getImageTag = &cobra.Command{
 			logrus.WithError(err).Error("Error getting image tag for component")
 		}
 
-		var tags []objects.ImageTag
-
-		marshErr := json.Unmarshal([]byte(out), &tags)
-		if marshErr != nil {
-			logrus.Fatal("Could not unmarshall data", marshErr)
+		if semverV1, err := semver.ParseRange(">=0.0.16 <0.0.17"); err != nil {
+			logrus.Fatal("Failed to parse SemVer")
+		} else {
+			if semverV1(sv) {
+				displayGetImageTagV1(out)
+			}
 		}
 
-		if !formatOverridden {
-			outputFormat = "table"
+		if semverV2, err := semver.ParseRange(">=0.0.17"); err != nil {
+			logrus.Fatal("Failed to parse SemVer")
+		} else {
+			if semverV2(sv) {
+				displayGetImageTagV2(out)
+			}
 		}
-
-		tagList := objects.ImageTagList{
-			ImageTags: tags,
-		}
-
-		switch strings.ToLower(outputFormat) {
-		case "json":
-			tagList.ToJSON()
-		case "gron":
-			tagList.ToGRON()
-		case "yaml":
-			tagList.ToYAML()
-		case "text", "table":
-			tagList.ToTEXT(noHeaders)
-		}
-
 	},
+}
+
+func displayGetImageTagV1(in string) {
+	fmt.Println(in)
+	os.Exit(0)
+}
+
+func displayGetImageTagV2(in string) {
+	if strings.ToLower(outputFormat) == "raw" {
+		fmt.Println(in)
+		os.Exit(0)
+	}
+
+	var tags []objects.ImageTag
+
+	marshErr := json.Unmarshal([]byte(in), &tags)
+	if marshErr != nil {
+		logrus.Fatal("Could not unmarshall data", marshErr)
+	}
+
+	if !formatOverridden {
+		outputFormat = "table"
+	}
+
+	tagList := objects.ImageTagList{
+		ImageTags: tags,
+	}
+
+	switch strings.ToLower(outputFormat) {
+	case "json":
+		tagList.ToJSON()
+	case "gron":
+		tagList.ToGRON()
+	case "yaml":
+		tagList.ToYAML()
+	case "text", "table":
+		tagList.ToTEXT(noHeaders)
+	}
+
 }
 
 func getImageTagData(componenetName string, databaseName string) (string, error) {

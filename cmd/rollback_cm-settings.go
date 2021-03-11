@@ -3,8 +3,10 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"strings"
 
+	"github.com/blang/semver/v4"
 	"github.com/go-resty/resty/v2"
 	"github.com/sirupsen/logrus"
 	"github.com/splicemachine/splicectl/cmd/objects"
@@ -20,6 +22,11 @@ var rollbackCMSettingsCmd = &cobra.Command{
 	splicectl rollback cm-settings --component ui --version 2
 `,
 	Run: func(cmd *cobra.Command, args []string) {
+
+		var sv semver.Version
+
+		_, sv = versionDetail.RequirementMet("rollback_cm-settings")
+
 		component, _ := cmd.Flags().GetString("component")
 
 		component = strings.ToLower(component)
@@ -31,28 +38,42 @@ var rollbackCMSettingsCmd = &cobra.Command{
 		if err != nil {
 			logrus.WithError(err).Error("Error rolling back CM Settings")
 		}
-		var vvData objects.VaultVersion
-		marshErr := json.Unmarshal([]byte(out), &vvData)
-		if marshErr != nil {
-			logrus.Fatal("Could not unmarshall data", marshErr)
-		}
 
-		if !formatOverridden {
-			outputFormat = "text"
+		if semverV1, err := semver.ParseRange(">=0.1.6"); err != nil {
+			logrus.Fatal("Failed to parse SemVer")
+		} else {
+			if semverV1(sv) {
+				displayRollbackCmSettingsV1(out)
+			}
 		}
-
-		switch strings.ToLower(outputFormat) {
-		case "json":
-			vvData.ToJSON()
-		case "gron":
-			vvData.ToGRON()
-		case "yaml":
-			vvData.ToYAML()
-		case "text", "table":
-			vvData.ToTEXT(noHeaders)
-		}
-
 	},
+}
+
+func displayRollbackCmSettingsV1(in string) {
+	if strings.ToLower(outputFormat) == "raw" {
+		fmt.Println(in)
+		os.Exit(0)
+	}
+	var vvData objects.VaultVersion
+	marshErr := json.Unmarshal([]byte(in), &vvData)
+	if marshErr != nil {
+		logrus.Fatal("Could not unmarshall data", marshErr)
+	}
+
+	if !formatOverridden {
+		outputFormat = "text"
+	}
+
+	switch strings.ToLower(outputFormat) {
+	case "json":
+		vvData.ToJSON()
+	case "gron":
+		vvData.ToGRON()
+	case "yaml":
+		vvData.ToYAML()
+	case "text", "table":
+		vvData.ToTEXT(noHeaders)
+	}
 }
 
 func rollbackCMSettings(comp string, ver int) (string, error) {

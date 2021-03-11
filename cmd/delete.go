@@ -3,7 +3,9 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 
+	"github.com/blang/semver/v4"
 	"github.com/go-resty/resty/v2"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -21,6 +23,10 @@ var deleteCmd = &cobra.Command{
 	  * The '--delete' is required as a validation for the deletion request`,
 	Run: func(cmd *cobra.Command, args []string) {
 		var dberr error
+		var sv semver.Version
+
+		_, sv = versionDetail.RequirementMet("delete")
+
 		verifyDelete, _ := cmd.Flags().GetBool("delete")
 		databaseName, _ := cmd.Flags().GetString("database-name")
 		if len(databaseName) == 0 {
@@ -36,7 +42,13 @@ var deleteCmd = &cobra.Command{
 				if err != nil {
 					logrus.Warn("Deleting database failed.")
 				}
-				fmt.Println(out)
+				if semverV1, err := semver.ParseRange(">=0.1.7"); err != nil {
+					logrus.Fatal("Failed to parse SemVer")
+				} else {
+					if semverV1(sv) {
+						displayDeleteV1(out)
+					}
+				}
 			} else {
 				logrus.Fatal("Unable to determine ClusterId from Database Name")
 			}
@@ -44,6 +56,11 @@ var deleteCmd = &cobra.Command{
 			logrus.Fatal("You MUST specify --delete on the commandline to validate the deletion")
 		}
 	},
+}
+
+func displayDeleteV1(in string) {
+	fmt.Println(in)
+	os.Exit(0)
 }
 
 func getMatchingClusterID(db string) string {

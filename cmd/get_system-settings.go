@@ -3,8 +3,10 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"strings"
 
+	"github.com/blang/semver/v4"
 	"github.com/go-resty/resty/v2"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -18,6 +20,11 @@ var getSystemSettingsCmd = &cobra.Command{
 	splicectl get system-settings -o json > ~/tmp/system-settings.json
 `,
 	Run: func(cmd *cobra.Command, args []string) {
+
+		var sv semver.Version
+
+		_, sv = versionDetail.RequirementMet("get_system-settings")
+
 		version, _ := cmd.Flags().GetInt("version")
 		decode, _ := cmd.Flags().GetBool("decode-values")
 
@@ -26,27 +33,55 @@ var getSystemSettingsCmd = &cobra.Command{
 			logrus.WithError(err).Error("Error getting System Settings")
 		}
 
-		var sessData objects.SystemSettings
-		marshErr := json.Unmarshal([]byte(out), &sessData)
-		if marshErr != nil {
-			logrus.Fatal("Could not unmarshall data", marshErr)
+		if semverV1, err := semver.ParseRange(">=0.0.14 <0.0.17"); err != nil {
+			logrus.Fatal("Failed to parse SemVer")
+		} else {
+			if semverV1(sv) {
+				displayGetSystemSettingsV1(out)
+			}
 		}
 
-		if !formatOverridden {
-			outputFormat = "yaml"
-		}
-
-		switch strings.ToLower(outputFormat) {
-		case "json":
-			sessData.ToJSON()
-		case "gron":
-			sessData.ToGRON()
-		case "yaml":
-			sessData.ToYAML()
-		case "text", "table":
-			sessData.ToTEXT(noHeaders, decode)
+		if semverV2, err := semver.ParseRange(">=0.0.17"); err != nil {
+			logrus.Fatal("Failed to parse SemVer")
+		} else {
+			if semverV2(sv) {
+				displayGetSystemSettingsV2(out, decode)
+			}
 		}
 	},
+}
+
+func displayGetSystemSettingsV1(in string) {
+	fmt.Println(in)
+	os.Exit(0)
+}
+
+func displayGetSystemSettingsV2(in string, dc bool) {
+	if strings.ToLower(outputFormat) == "raw" {
+		fmt.Println(in)
+		os.Exit(0)
+	}
+	var sessData objects.SystemSettings
+	marshErr := json.Unmarshal([]byte(in), &sessData)
+	if marshErr != nil {
+		logrus.Fatal("Could not unmarshall data", marshErr)
+	}
+
+	if !formatOverridden {
+		outputFormat = "yaml"
+	}
+
+	switch strings.ToLower(outputFormat) {
+	case "json":
+		sessData.ToJSON()
+	case "gron":
+		sessData.ToGRON()
+	case "yaml":
+		sessData.ToYAML()
+	case "text", "table":
+		sessData.ToTEXT(noHeaders, dc)
+	}
+
 }
 
 func getSystemSettings(ver int) (string, error) {

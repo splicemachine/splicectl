@@ -2,8 +2,10 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
+	"github.com/blang/semver/v4"
 	"github.com/go-resty/resty/v2"
 	"github.com/sirupsen/logrus"
 	"github.com/splicemachine/splicectl/common"
@@ -18,31 +20,63 @@ var versionsSystemSettingsCmd = &cobra.Command{
 	splicectl versions system-settings
 `,
 	Run: func(cmd *cobra.Command, args []string) {
+
+		var sv semver.Version
+
+		_, sv = versionDetail.RequirementMet("versions_system-settings")
+
 		out, err := getSystemSettingsVersions()
 		if err != nil {
 			logrus.WithError(err).Error("Error getting System Settings")
 		}
-		ssData, cerr := common.RestructureVersions(out)
-		if cerr != nil {
-			logrus.Fatal("Vault Version JSON conversion failed.")
+
+		if semverV1, err := semver.ParseRange(">=0.0.15 <0.0.17"); err != nil {
+			logrus.Fatal("Failed to parse SemVer")
+		} else {
+			if semverV1(sv) {
+				displayVersionsSystemSettingsV1(out)
+			}
 		}
 
-		if !formatOverridden {
-			outputFormat = "text"
+		if semverV2, err := semver.ParseRange(">=0.0.17"); err != nil {
+			logrus.Fatal("Failed to parse SemVer")
+		} else {
+			if semverV2(sv) {
+				displayVersionsSystemSettingsV2(out)
+			}
 		}
-
-		switch strings.ToLower(outputFormat) {
-		case "json":
-			ssData.ToJSON()
-		case "gron":
-			ssData.ToGRON()
-		case "yaml":
-			ssData.ToYAML()
-		case "text", "table":
-			ssData.ToTEXT(noHeaders)
-		}
-
 	},
+}
+
+func displayVersionsSystemSettingsV1(in string) {
+	fmt.Println(in)
+	os.Exit(0)
+}
+
+func displayVersionsSystemSettingsV2(in string) {
+	if strings.ToLower(outputFormat) == "raw" {
+		fmt.Println(in)
+		os.Exit(0)
+	}
+	ssData, cerr := common.RestructureVersions(in)
+	if cerr != nil {
+		logrus.Fatal("Vault Version JSON conversion failed.")
+	}
+
+	if !formatOverridden {
+		outputFormat = "text"
+	}
+
+	switch strings.ToLower(outputFormat) {
+	case "json":
+		ssData.ToJSON()
+	case "gron":
+		ssData.ToGRON()
+	case "yaml":
+		ssData.ToYAML()
+	case "text", "table":
+		ssData.ToTEXT(noHeaders)
+	}
 }
 
 func getSystemSettingsVersions() (string, error) {

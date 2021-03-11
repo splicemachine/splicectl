@@ -3,7 +3,9 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 
+	"github.com/blang/semver/v4"
 	"github.com/go-resty/resty/v2"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -19,6 +21,10 @@ var pauseCmd = &cobra.Command{
 	splicectl pause --database-name <database> --message "<message>"`,
 	Run: func(cmd *cobra.Command, args []string) {
 		var dberr error
+		var sv semver.Version
+
+		_, sv = versionDetail.RequirementMet("pause")
+
 		message, _ := cmd.Flags().GetString("message")
 		databaseName, _ := cmd.Flags().GetString("database-name")
 		if len(databaseName) == 0 {
@@ -32,12 +38,24 @@ var pauseCmd = &cobra.Command{
 			if err != nil {
 				logrus.Warn("Pausing database failed.")
 			}
-			fmt.Println(out)
+
+			if semverV1, err := semver.ParseRange(">=0.1.7"); err != nil {
+				logrus.Fatal("Failed to parse SemVer")
+			} else {
+				if semverV1(sv) {
+					displayPauseDatabaseV1(out)
+				}
+			}
 		} else {
 			logrus.Warn("The database is not listed as Active, not paused")
 		}
 
 	},
+}
+
+func displayPauseDatabaseV1(in string) {
+	fmt.Println(in)
+	os.Exit(0)
 }
 
 func isDatabaseActive(db string) bool {

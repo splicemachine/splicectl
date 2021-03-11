@@ -3,8 +3,10 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"strings"
 
+	"github.com/blang/semver/v4"
 	"github.com/go-resty/resty/v2"
 	"github.com/sirupsen/logrus"
 	"github.com/splicemachine/splicectl/cmd/objects"
@@ -20,6 +22,11 @@ var rollbackVaultKeyCmd = &cobra.Command{
 	splicectl rollback vault-key --keypath services/cloudmanager/config/default/ui --version 1
 	`,
 	Run: func(cmd *cobra.Command, args []string) {
+
+		var sv semver.Version
+
+		_, sv = versionDetail.RequirementMet("rollback_vault-key")
+
 		keyPath, _ := cmd.Flags().GetString("keypath")
 		if strings.HasPrefix(keyPath, "secrets/") {
 			keyPath = strings.TrimPrefix(keyPath, "secrets/")
@@ -29,28 +36,55 @@ var rollbackVaultKeyCmd = &cobra.Command{
 		if err != nil {
 			logrus.WithError(err).Error("Error rolling back Vault Key")
 		}
-		var vvData objects.VaultVersion
-		marshErr := json.Unmarshal([]byte(out), &vvData)
-		if marshErr != nil {
-			logrus.Fatal("Could not unmarshall data", marshErr)
+
+		if semverV1, err := semver.ParseRange(">=0.0.15 <0.0.17"); err != nil {
+			logrus.Fatal("Failed to parse SemVer")
+		} else {
+			if semverV1(sv) {
+				displayRollbackVaultKeyV1(out)
+			}
 		}
 
-		if !formatOverridden {
-			outputFormat = "text"
+		if semverV2, err := semver.ParseRange(">=0.0.17"); err != nil {
+			logrus.Fatal("Failed to parse SemVer")
+		} else {
+			if semverV2(sv) {
+				displayRollbackVaultKeyV2(out)
+			}
 		}
-
-		switch strings.ToLower(outputFormat) {
-		case "json":
-			vvData.ToJSON()
-		case "gron":
-			vvData.ToGRON()
-		case "yaml":
-			vvData.ToYAML()
-		case "text", "table":
-			vvData.ToTEXT(noHeaders)
-		}
-
 	},
+}
+
+func displayRollbackVaultKeyV1(in string) {
+	fmt.Println(in)
+	os.Exit(0)
+}
+
+func displayRollbackVaultKeyV2(in string) {
+	if strings.ToLower(outputFormat) == "raw" {
+		fmt.Println(in)
+		os.Exit(0)
+	}
+	var vvData objects.VaultVersion
+	marshErr := json.Unmarshal([]byte(in), &vvData)
+	if marshErr != nil {
+		logrus.Fatal("Could not unmarshall data", marshErr)
+	}
+
+	if !formatOverridden {
+		outputFormat = "text"
+	}
+
+	switch strings.ToLower(outputFormat) {
+	case "json":
+		vvData.ToJSON()
+	case "gron":
+		vvData.ToGRON()
+	case "yaml":
+		vvData.ToYAML()
+	case "text", "table":
+		vvData.ToTEXT(noHeaders)
+	}
 }
 
 func rollbackVaultKeyData(keypath string, ver int) (string, error) {

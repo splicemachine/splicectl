@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/blang/semver/v4"
 	"github.com/go-resty/resty/v2"
 	"github.com/sirupsen/logrus"
 	"github.com/splicemachine/splicectl/cmd/objects"
@@ -39,6 +40,10 @@ var createSpliceDatabaseCmd = &cobra.Command{
 	# edit the ~/tmp/splicedb-create.yaml
 	splicectl create splice-database --file ~/tmp/splicedb-create.yaml`,
 	Run: func(cmd *cobra.Command, args []string) {
+
+		var sv semver.Version
+
+		_, sv = versionDetail.RequirementMet("create_splice-database")
 
 		// Look for --file first, load that into the structure, then read each
 		// parameters and override the values loaded from the input file
@@ -75,8 +80,20 @@ var createSpliceDatabaseCmd = &cobra.Command{
 		if err != nil {
 			logrus.WithError(err).Error("Error Generating Default CR Info")
 		}
-		fmt.Println(out)
+
+		if semverV1, err := semver.ParseRange(">=0.1.7"); err != nil {
+			logrus.Fatal("Failed to parse SemVer")
+		} else {
+			if semverV1(sv) {
+				displayCreateSpliceDatabaseV1(out)
+			}
+		}
 	},
+}
+
+func displayCreateSpliceDatabaseV1(in string) {
+	fmt.Println(in)
+	os.Exit(0)
 }
 
 func populateRequest(cmd *cobra.Command, req *objects.DatabaseRequest, fileData bool) {

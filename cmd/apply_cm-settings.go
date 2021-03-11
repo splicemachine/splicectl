@@ -4,8 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"strings"
 
+	"github.com/blang/semver/v4"
 	"github.com/go-resty/resty/v2"
 	"github.com/sirupsen/logrus"
 	"github.com/splicemachine/splicectl/cmd/objects"
@@ -25,6 +27,10 @@ var applyCMSettingsCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		component, _ := cmd.Flags().GetString("component")
 
+		var sv semver.Version
+
+		_, sv = versionDetail.RequirementMet("apply_cm-settings")
+
 		component = strings.ToLower(component)
 		if len(component) == 0 || !strings.Contains("ui api", component) {
 			logrus.Fatal("--component needs to be 'ui' or 'api'")
@@ -41,28 +47,43 @@ var applyCMSettingsCmd = &cobra.Command{
 		if err != nil {
 			logrus.WithError(err).Error("Error setting System Settings")
 		}
-		var vvData objects.VaultVersion
-		marshErr := json.Unmarshal([]byte(out), &vvData)
-		if marshErr != nil {
-			logrus.Fatal("Could not unmarshall data", marshErr)
-		}
 
-		if !formatOverridden {
-			outputFormat = "text"
+		if semverV1, err := semver.ParseRange(">=0.1.6"); err != nil {
+			logrus.Fatal("Failed to parse SemVer")
+		} else {
+			if semverV1(sv) {
+				displayApplyCmSettingsV1(out)
+			}
 		}
-
-		switch strings.ToLower(outputFormat) {
-		case "json":
-			vvData.ToJSON()
-		case "gron":
-			vvData.ToGRON()
-		case "yaml":
-			vvData.ToYAML()
-		case "text", "table":
-			vvData.ToTEXT(noHeaders)
-		}
-
 	},
+}
+
+func displayApplyCmSettingsV1(in string) {
+	if strings.ToLower(outputFormat) == "raw" {
+		fmt.Println(in)
+		os.Exit(0)
+	}
+	var vvData objects.VaultVersion
+	marshErr := json.Unmarshal([]byte(in), &vvData)
+	if marshErr != nil {
+		logrus.Fatal("Could not unmarshall data", marshErr)
+	}
+
+	if !formatOverridden {
+		outputFormat = "text"
+	}
+
+	switch strings.ToLower(outputFormat) {
+	case "json":
+		vvData.ToJSON()
+	case "gron":
+		vvData.ToGRON()
+	case "yaml":
+		vvData.ToYAML()
+	case "text", "table":
+		vvData.ToTEXT(noHeaders)
+	}
+
 }
 
 func setCMSettings(comp string, in []byte) (string, error) {

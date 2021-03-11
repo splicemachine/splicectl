@@ -3,8 +3,10 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"strings"
 
+	"github.com/blang/semver/v4"
 	"github.com/go-resty/resty/v2"
 	"github.com/sirupsen/logrus"
 	"github.com/splicemachine/splicectl/cmd/objects"
@@ -21,34 +23,55 @@ var getAccountsCmd = &cobra.Command{
 	    * if no accounts are listed, you will need to logon to the Ops Center
 `,
 	Run: func(cmd *cobra.Command, args []string) {
+
+		var sv semver.Version
+
+		_, sv = versionDetail.RequirementMet("get_accounts")
+
 		out, err := getAccounts()
 		if err != nil {
 			logrus.WithError(err).Error("Error getting Default CR Info")
 		}
 
-		var accounts objects.AccountList
-
-		marshErr := json.Unmarshal([]byte(out), &accounts)
-		if marshErr != nil {
-			logrus.Fatal("Could not unmarshall data", marshErr)
-		}
-
-		if !formatOverridden {
-			outputFormat = "text"
-		}
-
-		switch strings.ToLower(outputFormat) {
-
-		case "json":
-			accounts.ToJSON()
-		case "gron":
-			accounts.ToGRON()
-		case "yaml":
-			accounts.ToYAML()
-		case "text", "table":
-			accounts.ToTEXT(noHeaders)
+		if semverV1, err := semver.ParseRange(">=0.1.7"); err != nil {
+			logrus.Fatal("Failed to parse SemVer")
+		} else {
+			if semverV1(sv) {
+				displayGetAccountsV1(out)
+			}
 		}
 	},
+}
+
+func displayGetAccountsV1(in string) {
+	if strings.ToLower(outputFormat) == "raw" {
+		fmt.Println(in)
+		os.Exit(0)
+	}
+
+	var accounts objects.AccountList
+
+	marshErr := json.Unmarshal([]byte(in), &accounts)
+	if marshErr != nil {
+		logrus.Fatal("Could not unmarshall data", marshErr)
+	}
+
+	if !formatOverridden {
+		outputFormat = "text"
+	}
+
+	switch strings.ToLower(outputFormat) {
+
+	case "json":
+		accounts.ToJSON()
+	case "gron":
+		accounts.ToGRON()
+	case "yaml":
+		accounts.ToYAML()
+	case "text", "table":
+		accounts.ToTEXT(noHeaders)
+	}
+
 }
 
 func getAccounts() (string, error) {

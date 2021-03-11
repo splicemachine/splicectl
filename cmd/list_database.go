@@ -3,8 +3,10 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"strings"
 
+	"github.com/blang/semver/v4"
 	"github.com/go-resty/resty/v2"
 	"github.com/sirupsen/logrus"
 	"github.com/splicemachine/splicectl/cmd/objects"
@@ -20,35 +22,68 @@ var listDatabaseCmd = &cobra.Command{
 	splicectl list database
 `,
 	Run: func(cmd *cobra.Command, args []string) {
+
+		var sv semver.Version
+
+		_, sv = versionDetail.RequirementMet("list_database")
+
 		// databaseName, _ := cmd.Flags().GetString("database-name")
 		out, err := getDatabaseList()
 		if err != nil {
 			logrus.WithError(err).Error("Error getting Database CR Info")
 		}
-		var dbList objects.DatabaseList
 
-		marshErr := json.Unmarshal([]byte(out), &dbList)
-		if marshErr != nil {
-			logrus.Fatal("Could not unmarshall data", marshErr)
+		if semverV1, err := semver.ParseRange(">=0.0.14 <0.0.17"); err != nil {
+			logrus.Fatal("Failed to parse SemVer")
+		} else {
+			if semverV1(sv) {
+				displayListDatabaseV1(out)
+			}
 		}
 
-		if !formatOverridden {
-			outputFormat = "table"
-		}
-
-		switch strings.ToLower(outputFormat) {
-		case "json":
-			dbList.ToJSON()
-		case "gron":
-			dbList.ToGRON()
-		case "yaml":
-			dbList.ToYAML()
-		case "text", "table":
-			dbList.ToTEXT(noHeaders)
+		if semverV2, err := semver.ParseRange(">=0.0.17"); err != nil {
+			logrus.Fatal("Failed to parse SemVer")
+		} else {
+			if semverV2(sv) {
+				displayListDatabaseV2(out)
+			}
 		}
 	},
 }
 
+func displayListDatabaseV1(in string) {
+	fmt.Println(in)
+	os.Exit(0)
+}
+
+func displayListDatabaseV2(in string) {
+	if strings.ToLower(outputFormat) == "raw" {
+		fmt.Println(in)
+		os.Exit(0)
+	}
+	var dbList objects.DatabaseList
+
+	marshErr := json.Unmarshal([]byte(in), &dbList)
+	if marshErr != nil {
+		logrus.Fatal("Could not unmarshall data", marshErr)
+	}
+
+	if !formatOverridden {
+		outputFormat = "table"
+	}
+
+	switch strings.ToLower(outputFormat) {
+	case "json":
+		dbList.ToJSON()
+	case "gron":
+		dbList.ToGRON()
+	case "yaml":
+		dbList.ToYAML()
+	case "text", "table":
+		dbList.ToTEXT(noHeaders)
+	}
+
+}
 func getDatabaseList() (string, error) {
 	restClient := resty.New()
 
