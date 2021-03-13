@@ -26,12 +26,11 @@ var applyDatabaseCRCmd = &cobra.Command{
     splicectl apply database-cr --database-name splicedb --file ~/tmp/splicedb.json
 `,
 	Run: func(cmd *cobra.Command, args []string) {
-
+		var dberr error
 		var sv semver.Version
 
 		_, sv = versionDetail.RequirementMet("apply_database-cr")
 
-		var dberr error
 		databaseName, _ := cmd.Flags().GetString("database-name")
 		if len(databaseName) == 0 {
 			databaseName, dberr = promptForDatabaseName()
@@ -64,7 +63,7 @@ var applyDatabaseCRCmd = &cobra.Command{
 			logrus.Fatal("Failed to parse SemVer")
 		} else {
 			if semverV2(sv) {
-				displayApplyDatabaseCRV1(out)
+				displayApplyDatabaseCRV2(out)
 			}
 		}
 
@@ -77,6 +76,7 @@ func displayApplyDatabaseCRV1(in string) {
 }
 
 func displayApplyDatabaseCRV2(in string) {
+
 	if strings.ToLower(outputFormat) == "raw" {
 		fmt.Println(in)
 		os.Exit(0)
