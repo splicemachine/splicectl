@@ -4,8 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"strings"
 
+	"github.com/blang/semver/v4"
 	"github.com/go-resty/resty/v2"
 	"github.com/sirupsen/logrus"
 	"github.com/splicemachine/splicectl/cmd/objects"
@@ -25,6 +27,10 @@ var applyDatabaseCRCmd = &cobra.Command{
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		var dberr error
+		var sv semver.Version
+
+		_, sv = versionDetail.RequirementMet("apply_database-cr")
+
 		databaseName, _ := cmd.Flags().GetString("database-name")
 		if len(databaseName) == 0 {
 			databaseName, dberr = promptForDatabaseName()
@@ -44,28 +50,57 @@ var applyDatabaseCRCmd = &cobra.Command{
 		if err != nil {
 			logrus.WithError(err).Error("Error setting Database CR Info")
 		}
-		var vvData objects.VaultVersion
-		marshErr := json.Unmarshal([]byte(out), &vvData)
-		if marshErr != nil {
-			logrus.Fatal("Could not unmarshall data", marshErr)
+
+		if semverV1, err := semver.ParseRange(">=0.0.14 <0.0.17"); err != nil {
+			logrus.Fatal("Failed to parse SemVer")
+		} else {
+			if semverV1(sv) {
+				displayApplyDatabaseCRV1(out)
+			}
 		}
 
-		if !formatOverridden {
-			outputFormat = "text"
-		}
-
-		switch strings.ToLower(outputFormat) {
-		case "json":
-			vvData.ToJSON()
-		case "gron":
-			vvData.ToGRON()
-		case "yaml":
-			vvData.ToYAML()
-		case "text", "table":
-			vvData.ToTEXT(noHeaders)
+		if semverV2, err := semver.ParseRange(">=0.0.17"); err != nil {
+			logrus.Fatal("Failed to parse SemVer")
+		} else {
+			if semverV2(sv) {
+				displayApplyDatabaseCRV2(out)
+			}
 		}
 
 	},
+}
+
+func displayApplyDatabaseCRV1(in string) {
+	fmt.Println(in)
+	os.Exit(0)
+}
+
+func displayApplyDatabaseCRV2(in string) {
+
+	if strings.ToLower(outputFormat) == "raw" {
+		fmt.Println(in)
+		os.Exit(0)
+	}
+	var vvData objects.VaultVersion
+	marshErr := json.Unmarshal([]byte(in), &vvData)
+	if marshErr != nil {
+		logrus.Fatal("Could not unmarshall data", marshErr)
+	}
+
+	if !formatOverridden {
+		outputFormat = "text"
+	}
+
+	switch strings.ToLower(outputFormat) {
+	case "json":
+		vvData.ToJSON()
+	case "gron":
+		vvData.ToGRON()
+	case "yaml":
+		vvData.ToYAML()
+	case "text", "table":
+		vvData.ToTEXT(noHeaders)
+	}
 }
 
 func setDatabaseCR(dbname string, in []byte) (string, error) {

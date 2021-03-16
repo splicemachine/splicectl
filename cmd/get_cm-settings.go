@@ -3,8 +3,10 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"strings"
 
+	"github.com/blang/semver/v4"
 	"github.com/go-resty/resty/v2"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -18,9 +20,13 @@ var getCMSettingsCmd = &cobra.Command{
 	splicectl get cm-settings --component ui -o json > ~/tmp/cm-ui.json
 `,
 	Run: func(cmd *cobra.Command, args []string) {
+
+		var sv semver.Version
+
+		_, sv = versionDetail.RequirementMet("get_cm-settings")
+
 		version, _ := cmd.Flags().GetInt("version")
 		component, _ := cmd.Flags().GetString("component")
-
 		component = strings.ToLower(component)
 		if len(component) == 0 || !strings.Contains("ui api", component) {
 			logrus.Fatal("--component needs to be 'ui' or 'api'")
@@ -30,27 +36,43 @@ var getCMSettingsCmd = &cobra.Command{
 			logrus.WithError(err).Error("Error getting CM Settings")
 		}
 
-		var sessData objects.CMSettings
-		marshErr := json.Unmarshal([]byte(out), &sessData)
-		if marshErr != nil {
-			logrus.Fatal("Could not unmarshall data", marshErr)
-		}
-
-		if !formatOverridden {
-			outputFormat = "yaml"
-		}
-
-		switch strings.ToLower(outputFormat) {
-		case "json":
-			sessData.ToJSON()
-		case "gron":
-			sessData.ToGRON()
-		case "yaml":
-			sessData.ToYAML()
-		case "text", "table":
-			sessData.ToTEXT(noHeaders)
+		if semverV1, err := semver.ParseRange(">=0.1.6"); err != nil {
+			logrus.Fatal("Failed to parse SemVer")
+		} else {
+			if semverV1(sv) {
+				displayGetCmSettingsV1(out)
+			}
 		}
 	},
+}
+
+func displayGetCmSettingsV1(in string) {
+	if strings.ToLower(outputFormat) == "raw" {
+		fmt.Println(in)
+		os.Exit(0)
+	}
+
+	var sessData objects.CMSettings
+	marshErr := json.Unmarshal([]byte(in), &sessData)
+	if marshErr != nil {
+		logrus.Fatal("Could not unmarshall data", marshErr)
+	}
+
+	if !formatOverridden {
+		outputFormat = "yaml"
+	}
+
+	switch strings.ToLower(outputFormat) {
+	case "json":
+		sessData.ToJSON()
+	case "gron":
+		sessData.ToGRON()
+	case "yaml":
+		sessData.ToYAML()
+	case "text", "table":
+		sessData.ToTEXT(noHeaders)
+	}
+
 }
 
 func getCMSettings(comp string, ver int) (string, error) {

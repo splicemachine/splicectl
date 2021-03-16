@@ -4,8 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"strings"
 
+	"github.com/blang/semver/v4"
 	"github.com/go-resty/resty/v2"
 	"github.com/sirupsen/logrus"
 	"github.com/splicemachine/splicectl/cmd/objects"
@@ -23,8 +25,12 @@ var applySystemSettingsCmd = &cobra.Command{
 	splicectl apply system-settings --file ~/tmp/system-settings.json
 `,
 	Run: func(cmd *cobra.Command, args []string) {
-		filePath, _ := cmd.Flags().GetString("file")
 
+		var sv semver.Version
+
+		_, sv = versionDetail.RequirementMet("apply_system-settings")
+
+		filePath, _ := cmd.Flags().GetString("file")
 		fileBytes, _ := ioutil.ReadFile(filePath)
 
 		jsonBytes, cerr := common.WantJSON(fileBytes)
@@ -36,28 +42,57 @@ var applySystemSettingsCmd = &cobra.Command{
 		if err != nil {
 			logrus.WithError(err).Error("Error setting System Settings")
 		}
-		var vvData objects.VaultVersion
-		marshErr := json.Unmarshal([]byte(out), &vvData)
-		if marshErr != nil {
-			logrus.Fatal("Could not unmarshall data", marshErr)
+
+		if semverV1, err := semver.ParseRange(">=0.0.14 <0.0.17"); err != nil {
+			logrus.Fatal("Failed to parse SemVer")
+		} else {
+			if semverV1(sv) {
+				displayApplySystemSettingsV1(out)
+			}
 		}
 
-		if !formatOverridden {
-			outputFormat = "text"
-		}
-
-		switch strings.ToLower(outputFormat) {
-		case "json":
-			vvData.ToJSON()
-		case "gron":
-			vvData.ToGRON()
-		case "yaml":
-			vvData.ToYAML()
-		case "text", "table":
-			vvData.ToTEXT(noHeaders)
+		if semverV2, err := semver.ParseRange(">=0.0.17"); err != nil {
+			logrus.Fatal("Failed to parse SemVer")
+		} else {
+			if semverV2(sv) {
+				displayApplySystemSettingsV2(out)
+			}
 		}
 
 	},
+}
+
+func displayApplySystemSettingsV1(in string) {
+	fmt.Println(in)
+	os.Exit(0)
+}
+
+func displayApplySystemSettingsV2(in string) {
+	if strings.ToLower(outputFormat) == "raw" {
+		fmt.Println(in)
+		os.Exit(0)
+	}
+	var vvData objects.VaultVersion
+	marshErr := json.Unmarshal([]byte(in), &vvData)
+	if marshErr != nil {
+		logrus.Fatal("Could not unmarshall data", marshErr)
+	}
+
+	if !formatOverridden {
+		outputFormat = "text"
+	}
+
+	switch strings.ToLower(outputFormat) {
+	case "json":
+		vvData.ToJSON()
+	case "gron":
+		vvData.ToGRON()
+	case "yaml":
+		vvData.ToYAML()
+	case "text", "table":
+		vvData.ToTEXT(noHeaders)
+	}
+
 }
 
 func setSystemSettings(in []byte) (string, error) {

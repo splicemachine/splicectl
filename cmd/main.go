@@ -17,14 +17,15 @@ import (
 )
 
 var (
-	semVer    string
-	gitCommit string
-	buildDate string
-	gitRef    string
+	semVer        string
+	gitCommit     string
+	buildDate     string
+	gitRef        string
+	versionDetail objects.Version
+	versionJSON   string
+	cfgFile       string
+	serverURI     string
 )
-
-var cfgFile string
-var serverURI string
 
 // var sessionID string
 // var tokenBearer string
@@ -52,6 +53,25 @@ database clusters under Kubernetes easier to manage.`,
 			apiServer = serverURI
 		}
 
+		// Collect the version info, for use in determining valid commands based on SemVer
+		if apiServer != "" {
+			version, err := getVersionInfo()
+			if err != nil {
+				logrus.WithError(err).Error("Error getting version info")
+			}
+			clientLine := fmt.Sprintf("\"Client\": {\"SemVer\": \"%s\", \"GitCommit\": \"%s\", \"BuildDate\": \"%s\"},", semVer, gitCommit, buildDate)
+			serverLine := fmt.Sprintf("\"Server\": %s},", version)
+			hostLine := fmt.Sprintf("\"Host\": \"%s\"", apiServer)
+			versionJSON = fmt.Sprintf("{\"VersionInfo\": {\n%s\n%s\n%s\n}", clientLine, serverLine, hostLine)
+		} else {
+			clientLine := fmt.Sprintf("\"Client\": {\"SemVer\": \"%s\", \"GitCommit\": \"%s\", \"BuildDate\": \"%s\"}}", semVer, gitCommit, buildDate)
+			versionJSON = fmt.Sprintf("{\"VersionInfo\": {%s}", clientLine)
+		}
+		marsherr := json.Unmarshal([]byte(versionJSON), &versionDetail)
+		if marsherr != nil {
+			logrus.WithError(marsherr).Error("Error decoding json for Version")
+		}
+
 		if os.Args[1] != "version" {
 			environment := getEnvironmentName()
 			authClient = auth.NewAuth(environment, common.SessionData{
@@ -63,28 +83,6 @@ database clusters under Kubernetes easier to manage.`,
 				logrus.Info("Your session has expired, please run the 'auth' again.")
 				os.Exit(1)
 			}
-
-			verInfo, verr := getVersionInfo()
-			if verr != nil {
-				logrus.Warn("Unable to verify server version, client/server interactions cannot be verified")
-			} else {
-				serverVersion := objects.BaseVersion{}
-				marsherr := json.Unmarshal([]byte(verInfo), &serverVersion)
-				if marsherr != nil {
-					logrus.Warn("Unable to verify server version, client/server interactions cannot be verified")
-				}
-				semVerParts := strings.Split(serverVersion.SemVer, ".")
-				serverMajorMinor := fmt.Sprintf("%s.%s", semVerParts[0], semVerParts[1])
-				semVerParts = strings.Split(semVer, ".")
-				clientMajorMinor := fmt.Sprintf("%s.%s", semVerParts[0], semVerParts[1])
-				if serverMajorMinor != clientMajorMinor {
-					logrus.Warn("The client/server major/minor versions do not match")
-					logrus.Info(fmt.Sprintf("\tServer: %s", serverVersion.SemVer))
-					logrus.Info(fmt.Sprintf("\tClient: %s", semVer))
-					os.Exit(1)
-				}
-			}
-
 		}
 
 		// Validate global parameters here, BEFORE we start to waste time
@@ -97,8 +95,9 @@ database clusters under Kubernetes easier to manage.`,
 			case "yaml":
 			case "text":
 			case "table":
+			case "raw":
 			default:
-				fmt.Println("Valid options for -o are [json|gron|[text|table]|yaml]")
+				fmt.Println("Valid options for -o are [json|gron|[text|table]|yaml|raw]")
 				os.Exit(1)
 			}
 			formatOverridden = true
