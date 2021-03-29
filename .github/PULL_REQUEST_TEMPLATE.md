@@ -25,6 +25,30 @@
 
 If the pull request includes user-facing changes, extra documentation is required:
 
-- [ ] Add a new changelog fragment in `changelog/fragments` (see [`changelog/fragments/00-template.yaml`](https://github.com/splicemachine/splicectl/tree/master/changelog/fragments/00-template.yaml))
+- [ ] If the change is user facing, please ensure you add info in one of the [Changelog Inclusions](#changelog-inclusions) sections.
 
-  - It is important to include the changelog fragment in your PR, this way the changelog will include the correct PR link.
+## Changelog Inclusions
+
+<!-- Text Entered in these sections will appear as it is written, MD formatted -->
+<!-- Avoid using the # character as the first character on any line, a trim is -->
+<!-- performed on each line when checking for markdown section tags -->
+- base feature note
+  - **BREAKING** note on base feature
+  - Basically whatever formatting we have here, just plain-text
+	%> command example
+- next feature
+  - note on next feature
+<!-- If there is NO text in a section, no entries will be collected for that section -->
+
+### Additions
+
+### Changes
+
+### Fixes
+
+### Deprecated
+
+### Removed
+
+### Breaking Changes
+
