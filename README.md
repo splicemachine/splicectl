@@ -32,7 +32,7 @@ Add the splice AUR to your /etc/pacman.conf
 ```bash
 [splice]
 SigLevel = Optional TrustAll
-Server = https://splice-releases.s3.amazonaws.com/aur/
+Server = https://splice-releases.s3.amazonaws.com/splicectl/aur/
 ```
 
 Then sync and install splicectl with pacman or your preferred aur wrapper
@@ -49,6 +49,14 @@ splice.files.tar.gz
 splicectl-v0.1.1-1-x86_64.pkg.tar.zst
 ```
 Upload those files into S3 and then you can update splicectl.
+
+##### CentOS/RHEL 7
+Add splice.repo to your `/etc/yum.repo.d/`. Then update your repolist with `yum update`. You should see splice as a now updated repo. Then install it with
+```bash
+yum install splicectl
+```
+
+To build the rpms, run `rpmbuild -ba splice.spec`. It will then download the source and then create the splicectl rpm in `rpmbuild/RPM/`
 
 TODO: Choose an installer/package manager
 TODO: Write the Linux installation script documentation
