@@ -11,6 +11,14 @@ tools.
 
 ## Installation
 
+## Source
+
+```bash
+cd splicectl
+go build
+```
+The splicectl binary will be in your splicectl directory.
+
 ### MacOS
 
 ```bash
@@ -18,6 +26,29 @@ brew install splicemachine/utility/splicectl
 ```
 
 ### Linux
+
+##### Arch Linux
+Add the splice AUR to your /etc/pacman.conf
+```bash
+[splice]
+SigLevel = Optional TrustAll
+Server = https://splice-releases.s3.amazonaws.com/aur/
+```
+
+Then sync and install splicectl with pacman or your preferred aur wrapper
+```bash
+sudo pacman -Sy splicectl
+```
+
+To update the AUR, run `makepkg -s`. Then `repo-add 'splice.db.tar.gz' 'splicectl-v0.1.1-1-x86_64.pkg.tar.zst'`. It will create a few files
+```bash
+splice.db
+splice.db.tar.gz
+splice.files
+splice.files.tar.gz
+splicectl-v0.1.1-1-x86_64.pkg.tar.zst
+```
+Upload those files into S3 and then you can update splicectl.
 
 TODO: Choose an installer/package manager
 TODO: Write the Linux installation script documentation
