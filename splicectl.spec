@@ -12,7 +12,7 @@ URL:            https://github.com/splicemachine/%{name}
 Source0:        https://github.com/splicemachine/%{name}/releases/download/v%{version}/%{name}_linux_amd64.tar.gz
 
 
-BuildRequires: go
+BuildRequires: golang
       
 %description 
 The splicectl cli is used to manage features of a SpliceDB Cluster running on Kubernetes.

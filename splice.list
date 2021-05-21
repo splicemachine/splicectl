@@ -1,0 +1,1 @@
+deb [trusted=yes] https://splice-releases.s3.amazonaws.com/splicectl/apt/ bionic main amd64

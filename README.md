@@ -58,8 +58,13 @@ yum install splicectl
 
 To build the rpms, run `rpmbuild -ba splice.spec`. It will then download the source and then create the splicectl rpm in `rpmbuild/RPM/`
 
-TODO: Choose an installer/package manager
-TODO: Write the Linux installation script documentation
+#### Ubuntu/Debian
+Copy the splice.list to your `/etc/apt/source.list.d/` then import the gpg key
+`wget -qO - https://splice-releases.s3.amazonaws.com/splicectl/apt/splice.gpg.key | sudo apt-key add -`
+
+Then run `sudo apt-get update` You should see splice as a repo get updated.
+Then you can install splicectl with `sudo apt-get install splicectl`
+
 
 ### Windows
 
