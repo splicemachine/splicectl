@@ -3,6 +3,7 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"strings"
 
@@ -32,6 +33,8 @@ var (
 // var tokenValid bool
 var apiServer string
 var outputFormat string
+var caCert string
+var caBundle string
 var formatOverridden bool
 var noHeaders bool
 var authClient auth.Client
@@ -47,6 +50,29 @@ var rootCmd = &cobra.Command{
 database clusters under Kubernetes easier to manage.`,
 	Args: cobra.MinimumNArgs(1),
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+
+		if len(caCert) > 0 {
+			if _, err := os.Stat(caCert); err != nil {
+				if os.IsNotExist(err) {
+					logrus.Info("Couldn't read the ca-file, please check the path")
+					os.Exit(1)
+				}
+			}
+			fileBytes, _ := ioutil.ReadFile(caCert)
+			caBundle = strings.TrimSpace(string(fileBytes[:]))
+		} else {
+			caCert = os.Getenv("SPLICECTL_CACERT")
+			if len(caCert) > 0 {
+				if _, err := os.Stat(caCert); err != nil {
+					if os.IsNotExist(err) {
+						logrus.Info("Couldn't read the ca-file, please check the path")
+						os.Exit(1)
+					}
+				}
+			}
+			fileBytes, _ := ioutil.ReadFile(caCert)
+			caBundle = strings.TrimSpace(string(fileBytes[:]))
+		}
 
 		apiServer = getIngressDetail()
 		if len(serverURI) > 0 {
@@ -123,6 +149,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&serverURI, "server-uri", "", "override the server uri for the API server http(s)://host.domain.name:overrideport")
 	rootCmd.PersistentFlags().StringVarP(&outputFormat, "output", "o", "", "output types: json, text, yaml, gron")
 	rootCmd.PersistentFlags().BoolVar(&noHeaders, "no-headers", false, "Suppress header output in Text output")
+	rootCmd.PersistentFlags().StringVar(&caCert, "cacert", "", "Specify a cacert file to use to authenticate the SSL certificate")
 }
 
 func initConfig() {

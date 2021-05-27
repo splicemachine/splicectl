@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -86,6 +88,15 @@ func displayGetSystemSettingsV2(in string, dc bool) {
 
 func getSystemSettings(ver int) (string, error) {
 	restClient := resty.New()
+	// Check if we've set a caBundle (via --ca-cert parameter)
+	if len(caBundle) > 0 {
+		roots := x509.NewCertPool()
+		ok := roots.AppendCertsFromPEM([]byte(caBundle))
+		if !ok {
+			logrus.Info("Failed to parse CABundle")
+		}
+		restClient.SetTLSClientConfig(&tls.Config{RootCAs: roots})
+	}
 
 	uri := fmt.Sprintf("splicectl/v1/vault/systemsettings?version=%d", ver)
 	resp, resperr := restClient.R().
