@@ -15,6 +15,7 @@ func promptForCSP() (string, error) {
 
 	cspList := []string{
 		"NONE",
+		"OP",
 		"AWS",
 		"AZ",
 		"GCP",
