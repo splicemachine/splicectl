@@ -38,7 +38,7 @@ var createSpliceDatabaseCmd = &cobra.Command{
 	While you can specify each of the parameters on the command line, it is much
 	easier to create a SKEL yaml file and use that to create the database.
 
-	splicectl create splice-database --skel --account-id <accountid> --cloud-provider <aws|az|gcp|none> > ~/tmp/splicedb-create.yaml
+	splicectl create splice-database --skel --account-id <accountid> --cloud-provider <aws|az|gcp|op|none> > ~/tmp/splicedb-create.yaml
 	# edit the ~/tmp/splicedb-create.yaml
 	splicectl create splice-database --file ~/tmp/splicedb-create.yaml`,
 	Run: func(cmd *cobra.Command, args []string) {
@@ -160,7 +160,7 @@ func populateRequest(cmd *cobra.Command, req *objects.DatabaseRequest, fileData 
 		if len(req.CloudProvider) == 0 || !fileData {
 			selectedCSP, err := promptForCSP()
 			if err != nil {
-				requiredList = append(requiredList, "--cloud-provider, (aws|az|gcp|none)")
+				requiredList = append(requiredList, "--cloud-provider, (aws|az|gcp|op|none)")
 			}
 			req.CloudProvider = selectedCSP
 		}
@@ -283,7 +283,7 @@ func init() {
 	createSpliceDatabaseCmd.Flags().Int("backup-interval", 1, "Specify the Backup Interval (default=1)")
 	createSpliceDatabaseCmd.Flags().Int("keep-backups", 1, "Specify the Backup Keep Count (default=1)")
 	createSpliceDatabaseCmd.Flags().String("backup-start-window", "02:30", "Specify the Backup Start Window (default=02:30)")
-	createSpliceDatabaseCmd.Flags().String("cloud-provider", "", "Specify the Cloud Provider (az|aws|gcp|none)")
+	createSpliceDatabaseCmd.Flags().String("cloud-provider", "", "Specify the Cloud Provider (az|aws|gcp|op|none)")
 	createSpliceDatabaseCmd.Flags().Int("spark-executors", 4, "Specify the number of Spark Executors/OLAP (default=4)")
 	createSpliceDatabaseCmd.Flags().Int("region-servers", 4, "Specify the number of Region Servers/OLTP (default=4)")
 	createSpliceDatabaseCmd.Flags().Bool("dedicated-storage", false, "Specify if dedicated storage should be used")
