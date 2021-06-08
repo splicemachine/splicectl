@@ -5,6 +5,7 @@ import (
 	"sort"
 	"strconv"
 
+	"github.com/spf13/cobra"
 	"github.com/splicemachine/splicectl/cmd/objects"
 	"sigs.k8s.io/yaml"
 )
@@ -68,4 +69,11 @@ func RestructureVersions(in string) (objects.VaultVersionList, error) {
 	}
 
 	return crData, nil
+}
+
+// DatabaseName - gets the most preferred database name from the command flags.
+// This is meant to be used to pick the best option when multiple flags are
+// provided for the database-name through its different aliases.
+func DatabaseName(cmd *cobra.Command) (string, string) {
+	return "", ""
 }

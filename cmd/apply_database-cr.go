@@ -24,6 +24,13 @@ var applyDatabaseCRCmd = &cobra.Command{
     splicectl get database-cr --database-name splicedb -o json > ~/tmp/splicedb.json
     # edit the file
     splicectl apply database-cr --database-name splicedb --file ~/tmp/splicedb.json
+
+	Note: --database-name and -d are the preferred way to supply the database name.
+	However, --database and --workspace can also be used as well. In the event that
+	more than one of them is supplied database-name and d are preferred over all
+	and workspace is preferred over database. The most preferred option that is
+	supplied will be used and a message will be displayed letting you know which
+	option was chosen if more than one were supplied.
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		var dberr error
@@ -126,7 +133,11 @@ func setDatabaseCR(dbname string, in []byte) (string, error) {
 func init() {
 	applyCmd.AddCommand(applyDatabaseCRCmd)
 
+	// add database name and aliases
 	applyDatabaseCRCmd.Flags().StringP("database-name", "d", "", "Specify the database name")
+	applyDatabaseCRCmd.Flags().String("database", "", "Alias for database-name, prefer the use of -d and --database-name.")
+	applyDatabaseCRCmd.Flags().String("workspace", "", "Alias for database-name, prefer the use of -d and --database-name.")
+
 	applyDatabaseCRCmd.Flags().StringP("file", "f", "", "Specify the input file")
 	// applyDatabaseCRCmd.MarkFlagRequired("database-name")
 	applyDatabaseCRCmd.MarkFlagRequired("file")
