@@ -15,10 +15,17 @@ import (
 
 var versionsDatabaseCRCmd = &cobra.Command{
 	Use:   "database-cr",
-	Short: "Retrieve the versions for a specific database CR in the cluster.",
+	Short: "Retrieve the versions for a specific workspace CR in the cluster.",
 	Long: `EXAMPLES
-	splicectl list database
-	splicectl versions database-cr --database-name splicedb
+	splicectl list workspace
+	splicectl versions workspace-cr --database-name splicedb
+
+	Note: --database-name and -d are the preferred way to supply the database name.
+	However, --database and --workspace can also be used as well. In the event that
+	more than one of them is supplied database-name and d are preferred over all
+	and workspace is preferred over database. The most preferred option that is
+	supplied will be used and a message will be displayed letting you know which
+	option was chosen if more than one were supplied.
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		var dberr error
@@ -26,16 +33,16 @@ var versionsDatabaseCRCmd = &cobra.Command{
 
 		_, sv = versionDetail.RequirementMet("versions_database-cr")
 
-		databaseName, _ := cmd.Flags().GetString("database-name")
+		databaseName := common.DatabaseName(cmd)
 		if len(databaseName) == 0 {
 			databaseName, dberr = promptForDatabaseName()
 			if dberr != nil {
-				logrus.Fatal("Could not get a list of Databases", dberr)
+				logrus.Fatal("Could not get a list of workspaces", dberr)
 			}
 		}
 		out, err := getDatabaseCRVersions(databaseName)
 		if err != nil {
-			logrus.WithError(err).Error("Error getting database CR versions")
+			logrus.WithError(err).Error("Error getting workspace CR versions")
 		}
 
 		if semverV1, err := semver.ParseRange(">=0.0.15 <0.0.17"); err != nil {
@@ -99,7 +106,7 @@ func getDatabaseCRVersions(db string) (string, error) {
 		Get(fmt.Sprintf("%s/%s", apiServer, uri))
 
 	if resperr != nil {
-		logrus.WithError(resperr).Error("Error getting Database CR Versions")
+		logrus.WithError(resperr).Error("Error getting workspace CR Versions")
 		return "", resperr
 	}
 
@@ -110,7 +117,11 @@ func getDatabaseCRVersions(db string) (string, error) {
 func init() {
 	versionsCmd.AddCommand(versionsDatabaseCRCmd)
 
+	// add database name and aliases
 	versionsDatabaseCRCmd.Flags().StringP("database-name", "d", "", "Specify the database name")
+	versionsDatabaseCRCmd.Flags().String("database", "", "Alias for database-name, prefer the use of -d and --database-name.")
+	versionsDatabaseCRCmd.Flags().String("workspace", "", "Alias for database-name, prefer the use of -d and --database-name.")
+
 	// versionsDatabaseCRCmd.Flags().String("output", "json", "Specify the output type")
 	// versionsDatabaseCRCmd.MarkFlagRequired("database-name")
 }

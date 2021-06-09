@@ -10,15 +10,23 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/splicemachine/splicectl/cmd/objects"
+	"github.com/splicemachine/splicectl/common"
 )
 
 var resumeCmd = &cobra.Command{
 	Use:   "resume",
 	Args:  cobra.MinimumNArgs(0),
-	Short: "Resume Cluster Databases",
+	Short: "Resume Cluster workspaces",
 	Long: `EXAMPLES
-	splicectl list databases
-	splicectl resume --database-name <database> --message "<message>"`,
+	splicectl list workspace
+	splicectl resume --database-name <database> --message "<message>"
+	
+	Note: --database-name and -d are the preferred way to supply the database name.
+	However, --database and --workspace can also be used as well. In the event that
+	more than one of them is supplied database-name and d are preferred over all
+	and workspace is preferred over database. The most preferred option that is
+	supplied will be used and a message will be displayed letting you know which
+	option was chosen if more than one were supplied.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		var dberr error
 		var sv semver.Version
@@ -26,17 +34,17 @@ var resumeCmd = &cobra.Command{
 		_, sv = versionDetail.RequirementMet("resume")
 
 		message, _ := cmd.Flags().GetString("message")
-		databaseName, _ := cmd.Flags().GetString("database-name")
+		databaseName := common.DatabaseName(cmd)
 		if len(databaseName) == 0 {
 			databaseName, dberr = promptForDatabaseName()
 			if dberr != nil {
-				logrus.Fatal("Could not get a list of Databases", dberr)
+				logrus.Fatal("Could not get a list of workspaces", dberr)
 			}
 		}
 		if isDatabasePaused(databaseName) {
 			out, err := resumeDatabase(databaseName, message)
 			if err != nil {
-				logrus.Warn("Resuming database failed.")
+				logrus.Warn("Resuming workspace failed.")
 			}
 
 			if semverV1, err := semver.ParseRange(">=0.1.7"); err != nil {
@@ -47,7 +55,7 @@ var resumeCmd = &cobra.Command{
 				}
 			}
 		} else {
-			logrus.Warn("The database is not listed as Paused, not resuming")
+			logrus.Warn("The workspace is not listed as Paused, not resuming")
 		}
 
 	},
@@ -67,7 +75,7 @@ func isDatabasePaused(db string) bool {
 
 	marshErr := json.Unmarshal([]byte(dbJSON), &dbList)
 	if marshErr != nil {
-		logrus.Fatal("Could not unmarshall database list for ClusterId", marshErr)
+		logrus.Fatal("Could not unmarshall workspace list for ClusterId", marshErr)
 	}
 
 	for _, v := range dbList.Clusters {
@@ -108,6 +116,11 @@ func resumeDatabase(db string, msg string) (string, error) {
 
 func init() {
 	rootCmd.AddCommand(resumeCmd)
-	resumeCmd.Flags().StringP("database-name", "d", "", "Specify the Splice Machine Database to Pause")
-	resumeCmd.Flags().StringP("message", "m", "", "Add a message to the database log")
+
+	// add database name and aliases
+	resumeCmd.Flags().StringP("database-name", "d", "", "Specify the database name")
+	resumeCmd.Flags().String("database", "", "Alias for database-name, prefer the use of -d and --database-name.")
+	resumeCmd.Flags().String("workspace", "", "Alias for database-name, prefer the use of -d and --database-name.")
+
+	resumeCmd.Flags().StringP("message", "m", "", "Add a message to the workspace log")
 }

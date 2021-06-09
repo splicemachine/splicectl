@@ -20,7 +20,7 @@ var applyDatabaseCRCmd = &cobra.Command{
 	Use:   "database-cr",
 	Short: "Submit a new CR for a specified database in the cluster.",
 	Long: `EXAMPLES
-	splicectl list database
+	splicectl list workspace
     splicectl get database-cr --database-name splicedb -o json > ~/tmp/splicedb.json
     # edit the file
     splicectl apply database-cr --database-name splicedb --file ~/tmp/splicedb.json
@@ -38,7 +38,7 @@ var applyDatabaseCRCmd = &cobra.Command{
 
 		_, sv = versionDetail.RequirementMet("apply_database-cr")
 
-		databaseName, _ := cmd.Flags().GetString("database-name")
+		databaseName := common.DatabaseName(cmd)
 		if len(databaseName) == 0 {
 			databaseName, dberr = promptForDatabaseName()
 			if dberr != nil {

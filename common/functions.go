@@ -5,6 +5,7 @@ import (
 	"sort"
 	"strconv"
 
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/splicemachine/splicectl/cmd/objects"
 	"sigs.k8s.io/yaml"
@@ -73,7 +74,30 @@ func RestructureVersions(in string) (objects.VaultVersionList, error) {
 
 // DatabaseName - gets the most preferred database name from the command flags.
 // This is meant to be used to pick the best option when multiple flags are
-// provided for the database-name through its different aliases.
-func DatabaseName(cmd *cobra.Command) (string, string) {
-	return "", ""
+// provided for the database-name through its different aliases. A warning is
+// logged at the warn level if multiple flags are populated.
+//
+// database name is resolved in accordance with the following note:
+// Note: --database-name and -d are the preferred way to supply the database name.
+// However, --database and --workspace can also be used as well. In the event that
+// more than one of them is supplied database-name and d are preferred over all
+// and workspace is preferred over database. The most preferred option that is
+// supplied will be used and a message will be displayed letting you know which
+// option was chosen if more than one were supplied.
+func DatabaseName(cmd *cobra.Command) string {
+	dbName, _ := cmd.Flags().GetString("database-name")
+	workspace, _ := cmd.Flags().GetString("workspace")
+	db, _ := cmd.Flags().GetString("database")
+	prefName, numFlagsSupplied := "", 0
+	for _, name := range []string{db, workspace, dbName} {
+		if name != "" {
+			numFlagsSupplied += 1
+			prefName = name
+		}
+	}
+	if numFlagsSupplied > 1 {
+		logrus.Warn("multiple flags were supplied of [database-name|workspace|database], but this command may not use the expected name if multiple names are supplied")
+		logrus.Warnf("this command will use name: %s", prefName)
+	}
+	return prefName
 }

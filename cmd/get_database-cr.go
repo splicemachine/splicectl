@@ -10,16 +10,24 @@ import (
 	"github.com/go-resty/resty/v2"
 	"github.com/sirupsen/logrus"
 	"github.com/splicemachine/splicectl/cmd/objects"
+	"github.com/splicemachine/splicectl/common"
 
 	"github.com/spf13/cobra"
 )
 
 var getDatabaseCRCmd = &cobra.Command{
 	Use:   "database-cr",
-	Short: "Get the CR for a specific database in the cluster.",
+	Short: "Get the CR for a specific workspace in the cluster.",
 	Long: `EXAMPLES
-	splicectl list database
+	splicectl list workspace
 	splicectl get database-cr --database-name splicedb -o json > ~/tmp/splicedb-cr.json
+
+	Note: --database-name and -d are the preferred way to supply the database name.
+	However, --database and --workspace can also be used as well. In the event that
+	more than one of them is supplied database-name and d are preferred over all
+	and workspace is preferred over database. The most preferred option that is
+	supplied will be used and a message will be displayed letting you know which
+	option was chosen if more than one were supplied.
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		var dberr error
@@ -27,7 +35,7 @@ var getDatabaseCRCmd = &cobra.Command{
 
 		_, sv = versionDetail.RequirementMet("get_database-cr")
 
-		databaseName, _ := cmd.Flags().GetString("database-name")
+		databaseName := common.DatabaseName(cmd)
 		if len(databaseName) == 0 {
 			databaseName, dberr = promptForDatabaseName()
 			if dberr != nil {
@@ -39,7 +47,7 @@ var getDatabaseCRCmd = &cobra.Command{
 
 		out, err := getDatabaseCR(databaseName, version)
 		if err != nil {
-			logrus.WithError(err).Error("Error getting Database CR Info")
+			logrus.WithError(err).Error("Error getting workspace CR Info")
 		}
 
 		if semverV1, err := semver.ParseRange(">=0.0.14 <0.0.17"); err != nil {
@@ -108,7 +116,7 @@ func getDatabaseCR(dbname string, ver int) (string, error) {
 		Get(fmt.Sprintf("%s/%s", apiServer, uri))
 
 	if resperr != nil {
-		logrus.WithError(resperr).Error("Error getting Database CR Info")
+		logrus.WithError(resperr).Error("Error getting workspace CR Info")
 		return "", resperr
 	}
 
@@ -119,7 +127,11 @@ func getDatabaseCR(dbname string, ver int) (string, error) {
 func init() {
 	getCmd.AddCommand(getDatabaseCRCmd)
 
+	// add database name and aliases
 	getDatabaseCRCmd.Flags().StringP("database-name", "d", "", "Specify the database name")
+	getDatabaseCRCmd.Flags().String("database", "", "Alias for database-name, prefer the use of -d and --database-name.")
+	getDatabaseCRCmd.Flags().String("workspace", "", "Alias for database-name, prefer the use of -d and --database-name.")
+
 	getDatabaseCRCmd.Flags().IntP("version", "v", 0, "Specify the version to retrieve, default latest")
 	getDatabaseCRCmd.Flags().StringP("file", "f", "", "Specify an output file")
 	// getDatabaseCRCmd.MarkFlagRequired("database-name")

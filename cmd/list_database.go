@@ -15,11 +15,11 @@ import (
 )
 
 var listDatabaseCmd = &cobra.Command{
-	Use:     "database",
-	Aliases: []string{"databases"},
+	Use:     "workspace",
+	Aliases: []string{"workspaces", "database", "databases"},
 	Short:   "Retrieve a list of splice databases in the cluster.",
 	Long: `EXAMPLES
-	splicectl list database
+	splicectl list workspace
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 

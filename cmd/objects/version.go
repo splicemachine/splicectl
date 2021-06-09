@@ -25,7 +25,7 @@ var CommandVersions = map[string]string{
 	"apply_image-tag":          "0.0.16",
 	"apply_system-settings":    "0.0.14",
 	"apply_vault-key":          "0.0.14",
-	"create_splice-database":   "0.1.7",
+	"create_database":          "0.1.7",
 	"delete":                   "0.1.7",
 	"get_accounts":             "0.1.7",
 	"get_cm-settings":          "0.1.6",

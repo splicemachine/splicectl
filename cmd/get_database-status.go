@@ -7,6 +7,7 @@ import (
 	"github.com/blang/semver/v4"
 	"github.com/go-resty/resty/v2"
 	"github.com/sirupsen/logrus"
+	"github.com/splicemachine/splicectl/common"
 
 	"github.com/spf13/cobra"
 )
@@ -16,6 +17,13 @@ var getDatabaseStatus = &cobra.Command{
 	Short: "Get the status of database.",
 	Long: `EXAMPLES
 	splicectl get database-status --database-name "test"
+
+	Note: --database-name and -d are the preferred way to supply the database name.
+	However, --database and --workspace can also be used as well. In the event that
+	more than one of them is supplied database-name and d are preferred over all
+	and workspace is preferred over database. The most preferred option that is
+	supplied will be used and a message will be displayed letting you know which
+	option was chosen if more than one were supplied.
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		var dberr error
@@ -23,7 +31,7 @@ var getDatabaseStatus = &cobra.Command{
 
 		_, sv = versionDetail.RequirementMet("get_database-status")
 
-		databaseName, _ := cmd.Flags().GetString("database-name")
+		databaseName := common.DatabaseName(cmd)
 		if len(databaseName) == 0 {
 			databaseName, dberr = promptForDatabaseName()
 			if dberr != nil {
@@ -72,5 +80,9 @@ func getDatabaseStatusData(databaseName string) (string, error) {
 
 func init() {
 	getCmd.AddCommand(getDatabaseStatus)
+
+	// add database name and aliases
 	getDatabaseStatus.Flags().StringP("database-name", "d", "", "Specify the database name")
+	getDatabaseStatus.Flags().String("database", "", "Alias for database-name, prefer the use of -d and --database-name.")
+	getDatabaseStatus.Flags().String("workspace", "", "Alias for database-name, prefer the use of -d and --database-name.")
 }

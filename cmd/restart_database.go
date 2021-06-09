@@ -10,16 +10,25 @@ import (
 	"github.com/go-resty/resty/v2"
 	"github.com/sirupsen/logrus"
 	"github.com/splicemachine/splicectl/cmd/objects"
+	"github.com/splicemachine/splicectl/common"
 
 	"github.com/spf13/cobra"
 )
 
 var restartDatabaseCmd = &cobra.Command{
-	Use:   "database",
-	Short: "Restart a specific database in the Splice DB Cluster.",
+	Use:     "workspace",
+	Aliases: []string{"database"},
+	Short:   "Restart a specific database in the Splice DB Cluster.",
 	Long: `EXAMPLES
-	splicectl list database
-	splicectl restart database --database-name splicedb
+	splicectl list workspace
+	splicectl restart workspace --database-name splicedb
+
+	Note: --database-name and -d are the preferred way to supply the database name.
+	However, --database and --workspace can also be used as well. In the event that
+	more than one of them is supplied database-name and d are preferred over all
+	and workspace is preferred over database. The most preferred option that is
+	supplied will be used and a message will be displayed letting you know which
+	option was chosen if more than one were supplied.
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		var dberr error
@@ -27,7 +36,7 @@ var restartDatabaseCmd = &cobra.Command{
 
 		_, sv = versionDetail.RequirementMet("restart_database")
 
-		databaseName, _ := cmd.Flags().GetString("database-name")
+		databaseName := common.DatabaseName(cmd)
 		forceRestart, _ := cmd.Flags().GetBool("force")
 		if len(databaseName) == 0 {
 			databaseName, dberr = promptForDatabaseName()
@@ -100,7 +109,11 @@ func restartDatabase(dbname string, force bool) (string, error) {
 func init() {
 	restartCmd.AddCommand(restartDatabaseCmd)
 
+	// add database name and aliases
 	restartDatabaseCmd.Flags().StringP("database-name", "d", "", "Specify the database name")
+	restartDatabaseCmd.Flags().String("database", "", "Alias for database-name, prefer the use of -d and --database-name.")
+	restartDatabaseCmd.Flags().String("workspace", "", "Alias for database-name, prefer the use of -d and --database-name.")
+
 	restartDatabaseCmd.Flags().BoolP("force", "f", false, "Force the restart")
 
 }

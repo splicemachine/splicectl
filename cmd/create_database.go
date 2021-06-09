@@ -26,9 +26,10 @@ type AuthError struct {
 	/* variables */
 }
 
-var createSpliceDatabaseCmd = &cobra.Command{
-	Use:     "splice-database",
-	Aliases: []string{"database"},
+var createDatabaseCmd = &cobra.Command{
+	Use: "workspace",
+	// splice-database used to be the command name, it is only being kept as an alias for back-compat as it does not match the naming system for other database/workspace commands
+	Aliases: []string{"database", "splice-database"},
 	Short:   "Create a Splice Machine Database",
 	Long: `EXAMPLES
 	splicectl get accounts
@@ -36,14 +37,21 @@ var createSpliceDatabaseCmd = &cobra.Command{
 	While you can specify each of the parameters on the command line, it is much
 	easier to create a SKEL yaml file and use that to create the database.
 
-	splicectl create splice-database --skel --account-id <accountid> --cloud-provider <aws|az|gcp|op|none> > ~/tmp/splicedb-create.yaml
+	splicectl create workspace --skel --account-id <accountid> --cloud-provider <aws|az|gcp|op|none> > ~/tmp/splicedb-create.yaml
 	# edit the ~/tmp/splicedb-create.yaml
-	splicectl create splice-database --file ~/tmp/splicedb-create.yaml`,
+	splicectl create workspace --file ~/tmp/splicedb-create.yaml
+	
+	Note: --database-name and -d are the preferred way to supply the database name.
+	However, --database and --workspace can also be used as well. In the event that
+	more than one of them is supplied database-name and d are preferred over all
+	and workspace is preferred over database. The most preferred option that is
+	supplied will be used and a message will be displayed letting you know which
+	option was chosen if more than one were supplied.`,
 	Run: func(cmd *cobra.Command, args []string) {
 
 		var sv semver.Version
 
-		_, sv = versionDetail.RequirementMet("create_splice-database")
+		_, sv = versionDetail.RequirementMet("create_database")
 
 		// Look for --file first, load that into the structure, then read each
 		// parameters and override the values loaded from the input file
@@ -100,7 +108,7 @@ func populateRequest(cmd *cobra.Command, req *objects.DatabaseRequest, fileData 
 
 	requiredList := []string{}
 
-	databaseName, _ := cmd.Flags().GetString("database-name")
+	databaseName := common.DatabaseName(cmd)
 	password, _ := cmd.Flags().GetString("password")
 	accountID, _ := cmd.Flags().GetString("account-id")
 	authorizationCode, _ := cmd.Flags().GetString("authorization-code")
@@ -259,29 +267,33 @@ func createSpliceDatabase(dbReq *objects.DatabaseRequest, outputonly bool) (stri
 }
 
 func init() {
-	createCmd.AddCommand(createSpliceDatabaseCmd)
+	createCmd.AddCommand(createDatabaseCmd)
 
-	createSpliceDatabaseCmd.Flags().BoolP("skel", "s", false, "Generate a skeleton values file for submission")
-	createSpliceDatabaseCmd.Flags().StringP("file", "f", "", "Specify the input file")
+	createDatabaseCmd.Flags().BoolP("skel", "s", false, "Generate a skeleton values file for submission")
+	createDatabaseCmd.Flags().StringP("file", "f", "", "Specify the input file")
 
-	createSpliceDatabaseCmd.Flags().StringP("database-name", "d", "test", "Specify the Splice Machine Database Cluster Name (default=test)")
-	createSpliceDatabaseCmd.Flags().String("password", "admin", "Specify the Splice Machine Database Password (default=admin)")
-	createSpliceDatabaseCmd.Flags().String("account-id", "", "Specify the Cloud Manager Account ID to associate the database to")
-	createSpliceDatabaseCmd.Flags().String("authorization-code", "", "Specify the Authorization Code")
-	createSpliceDatabaseCmd.Flags().String("backup-frequency", "daily", "Specify the Backup Frequency (default=daily)")
-	createSpliceDatabaseCmd.Flags().Int("backup-interval", 1, "Specify the Backup Interval (default=1)")
-	createSpliceDatabaseCmd.Flags().Int("keep-backups", 1, "Specify the Backup Keep Count (default=1)")
-	createSpliceDatabaseCmd.Flags().String("backup-start-window", "02:30", "Specify the Backup Start Window (default=02:30)")
-	createSpliceDatabaseCmd.Flags().String("cloud-provider", "", "Specify the Cloud Provider (az|aws|gcp|op|none)")
-	createSpliceDatabaseCmd.Flags().Int("spark-executors", 4, "Specify the number of Spark Executors/OLAP (default=4)")
-	createSpliceDatabaseCmd.Flags().Int("region-servers", 4, "Specify the number of Region Servers/OLTP (default=4)")
-	createSpliceDatabaseCmd.Flags().Bool("dedicated-storage", false, "Specify if dedicated storage should be used")
-	createSpliceDatabaseCmd.Flags().Int("external-dataset-size", 0, "Specify the size (GB) of the external storage (default=0)")
-	createSpliceDatabaseCmd.Flags().Int("internal-dataset-size", 1, "Specify the size (GB) of the internal storage (default=1)")
-	createSpliceDatabaseCmd.Flags().Bool("enable-mlmanager", false, "Enable the ML Manager features of the database (default=false)")
-	createSpliceDatabaseCmd.Flags().Int("notebook-active-users", 4, "Specify the max number of active Jupyter notebook sessions (default=4)")
-	createSpliceDatabaseCmd.Flags().Int("notebook-executors", 2, "Specify the max number Spark Executors per notebook (default=2)")
-	createSpliceDatabaseCmd.Flags().Int("notebook-total-users", 10, "Specify the max notebook users (default=10)")
-	createSpliceDatabaseCmd.Flags().Int("notebooks-per-user", 2, "Specify the max number of notebooks per user (default=2)")
+	// add database name and aliases
+	createDatabaseCmd.Flags().StringP("database-name", "d", "", "Specify the database name")
+	createDatabaseCmd.Flags().String("database", "", "Alias for database-name, prefer the use of -d and --database-name.")
+	createDatabaseCmd.Flags().String("workspace", "", "Alias for database-name, prefer the use of -d and --database-name.")
+
+	createDatabaseCmd.Flags().String("password", "admin", "Specify the Splice Machine Database Password (default=admin)")
+	createDatabaseCmd.Flags().String("account-id", "", "Specify the Cloud Manager Account ID to associate the database to")
+	createDatabaseCmd.Flags().String("authorization-code", "", "Specify the Authorization Code")
+	createDatabaseCmd.Flags().String("backup-frequency", "daily", "Specify the Backup Frequency (default=daily)")
+	createDatabaseCmd.Flags().Int("backup-interval", 1, "Specify the Backup Interval (default=1)")
+	createDatabaseCmd.Flags().Int("keep-backups", 1, "Specify the Backup Keep Count (default=1)")
+	createDatabaseCmd.Flags().String("backup-start-window", "02:30", "Specify the Backup Start Window (default=02:30)")
+	createDatabaseCmd.Flags().String("cloud-provider", "", "Specify the Cloud Provider (az|aws|gcp|op|none)")
+	createDatabaseCmd.Flags().Int("spark-executors", 4, "Specify the number of Spark Executors/OLAP (default=4)")
+	createDatabaseCmd.Flags().Int("region-servers", 4, "Specify the number of Region Servers/OLTP (default=4)")
+	createDatabaseCmd.Flags().Bool("dedicated-storage", false, "Specify if dedicated storage should be used")
+	createDatabaseCmd.Flags().Int("external-dataset-size", 0, "Specify the size (GB) of the external storage (default=0)")
+	createDatabaseCmd.Flags().Int("internal-dataset-size", 1, "Specify the size (GB) of the internal storage (default=1)")
+	createDatabaseCmd.Flags().Bool("enable-mlmanager", false, "Enable the ML Manager features of the database (default=false)")
+	createDatabaseCmd.Flags().Int("notebook-active-users", 4, "Specify the max number of active Jupyter notebook sessions (default=4)")
+	createDatabaseCmd.Flags().Int("notebook-executors", 2, "Specify the max number Spark Executors per notebook (default=2)")
+	createDatabaseCmd.Flags().Int("notebook-total-users", 10, "Specify the max notebook users (default=10)")
+	createDatabaseCmd.Flags().Int("notebooks-per-user", 2, "Specify the max number of notebooks per user (default=2)")
 
 }

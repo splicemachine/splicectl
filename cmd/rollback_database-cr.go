@@ -10,17 +10,25 @@ import (
 	"github.com/go-resty/resty/v2"
 	"github.com/sirupsen/logrus"
 	"github.com/splicemachine/splicectl/cmd/objects"
+	"github.com/splicemachine/splicectl/common"
 
 	"github.com/spf13/cobra"
 )
 
 var rollbackDatabaseCRCmd = &cobra.Command{
 	Use:   "database-cr",
-	Short: "Rollback the Database CR to a specific vault version",
+	Short: "Rollback the workspace CR to a specific vault version",
 	Long: `EXAMPLES
-	splicectl list database
-	splicectl versions database-cr --database-name splicedb
-	splicectl rollback database-cr --database-name splicedb --version 2
+	splicectl list workspace
+	splicectl versions workspace-cr --database-name splicedb
+	splicectl rollback workspace-cr --database-name splicedb --version 2
+
+	Note: --database-name and -d are the preferred way to supply the database name.
+	However, --database and --workspace can also be used as well. In the event that
+	more than one of them is supplied database-name and d are preferred over all
+	and workspace is preferred over database. The most preferred option that is
+	supplied will be used and a message will be displayed letting you know which
+	option was chosen if more than one were supplied.
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		var dberr error
@@ -28,17 +36,17 @@ var rollbackDatabaseCRCmd = &cobra.Command{
 
 		_, sv = versionDetail.RequirementMet("rollback_database-cr")
 
-		databaseName, _ := cmd.Flags().GetString("database-name")
+		databaseName := common.DatabaseName(cmd)
 		if len(databaseName) == 0 {
 			databaseName, dberr = promptForDatabaseName()
 			if dberr != nil {
-				logrus.Fatal("Could not get a list of Databases", dberr)
+				logrus.Fatal("Could not get a list of workspaces", dberr)
 			}
 		}
 		version, _ := cmd.Flags().GetInt("version")
 		out, err := rollbackDatabaseCR(databaseName, version)
 		if err != nil {
-			logrus.WithError(err).Error("Error getting Database CR Info")
+			logrus.WithError(err).Error("Error getting workspace CR Info")
 		}
 
 		if semverV1, err := semver.ParseRange(">=0.0.15 <0.0.17"); err != nil {
@@ -103,7 +111,7 @@ func rollbackDatabaseCR(dbname string, ver int) (string, error) {
 		Post(fmt.Sprintf("%s/%s", apiServer, uri))
 
 	if resperr != nil {
-		logrus.WithError(resperr).Error("Error getting Database CR Info")
+		logrus.WithError(resperr).Error("Error getting workspace CR Info")
 		return "", resperr
 	}
 
@@ -114,7 +122,11 @@ func rollbackDatabaseCR(dbname string, ver int) (string, error) {
 func init() {
 	rollbackCmd.AddCommand(rollbackDatabaseCRCmd)
 
+	// add database name and aliases
 	rollbackDatabaseCRCmd.Flags().StringP("database-name", "d", "", "Specify the database name")
+	rollbackDatabaseCRCmd.Flags().String("database", "", "Alias for database-name, prefer the use of -d and --database-name.")
+	rollbackDatabaseCRCmd.Flags().String("workspace", "", "Alias for database-name, prefer the use of -d and --database-name.")
+
 	// rollbackDatabaseCRCmd.Flags().String("output", "json", "Specify the output type")
 	rollbackDatabaseCRCmd.Flags().IntP("version", "v", 0, "Specify the version to retrieve, default latest")
 	// rollbackDatabaseCRCmd.MarkFlagRequired("database-name")
