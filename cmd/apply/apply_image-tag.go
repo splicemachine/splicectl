@@ -1,4 +1,4 @@
-package cmd
+package apply
 
 import (
 	"fmt"
@@ -7,6 +7,7 @@ import (
 	"github.com/blang/semver/v4"
 	"github.com/go-resty/resty/v2"
 	"github.com/sirupsen/logrus"
+	c "github.com/splicemachine/splicectl/cmd"
 
 	"github.com/spf13/cobra"
 )
@@ -28,7 +29,7 @@ var applyImageTagCmd = &cobra.Command{
 		var dberr error
 		var sv semver.Version
 
-		_, sv = versionDetail.RequirementMet("apply_image-tag")
+		_, sv = c.VersionDetail.RequirementMet("apply_image-tag")
 
 		componentName, _ := cmd.Flags().GetString("component-name")
 		databaseName, _ := cmd.Flags().GetString("database-name")

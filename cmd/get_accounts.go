@@ -26,7 +26,7 @@ var getAccountsCmd = &cobra.Command{
 
 		var sv semver.Version
 
-		_, sv = versionDetail.RequirementMet("get_accounts")
+		_, sv = VersionDetail.RequirementMet("get_accounts")
 
 		out, err := getAccounts()
 		if err != nil {
@@ -44,7 +44,7 @@ var getAccountsCmd = &cobra.Command{
 }
 
 func displayGetAccountsV1(in string) {
-	if strings.ToLower(outputFormat) == "raw" {
+	if strings.ToLower(OutputFormat) == "raw" {
 		fmt.Println(in)
 		os.Exit(0)
 	}
@@ -56,11 +56,11 @@ func displayGetAccountsV1(in string) {
 		logrus.Fatal("Could not unmarshall data", marshErr)
 	}
 
-	if !formatOverridden {
-		outputFormat = "text"
+	if !FormatOverridden {
+		OutputFormat = "text"
 	}
 
-	switch strings.ToLower(outputFormat) {
+	switch strings.ToLower(OutputFormat) {
 
 	case "json":
 		accounts.ToJSON()
@@ -69,7 +69,7 @@ func displayGetAccountsV1(in string) {
 	case "yaml":
 		accounts.ToYAML()
 	case "text", "table":
-		accounts.ToTEXT(noHeaders)
+		accounts.ToTEXT(NoHeaders)
 	}
 
 }
@@ -81,9 +81,9 @@ func getAccounts() (string, error) {
 	resp, resperr := restClient.R().
 		SetHeader("Content-Type", "application/json").
 		SetHeader("Accept", "application/json").
-		SetHeader("X-Token-Bearer", authClient.GetTokenBearer()).
-		SetHeader("X-Token-Session", authClient.GetSessionID()).
-		Get(fmt.Sprintf("%s/%s", apiServer, uri))
+		SetHeader("X-Token-Bearer", AuthClient.GetTokenBearer()).
+		SetHeader("X-Token-Session", AuthClient.GetSessionID()).
+		Get(fmt.Sprintf("%s/%s", ApiServer, uri))
 
 	if resperr != nil {
 		logrus.WithError(resperr).Error("Error getting Account List Info")

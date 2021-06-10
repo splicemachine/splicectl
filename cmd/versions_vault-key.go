@@ -23,7 +23,7 @@ var versionsVaultKeyCmd = &cobra.Command{
 
 		var sv semver.Version
 
-		_, sv = versionDetail.RequirementMet("versions_vault-key")
+		_, sv = VersionDetail.RequirementMet("versions_vault-key")
 
 		keyPath, _ := cmd.Flags().GetString("keypath")
 		if strings.HasPrefix(keyPath, "secrets/") {
@@ -58,7 +58,7 @@ func displayVersionsVaultKeyV1(in string) {
 }
 
 func displayVersionsVaultKeyV2(in string) {
-	if strings.ToLower(outputFormat) == "raw" {
+	if strings.ToLower(OutputFormat) == "raw" {
 		fmt.Println(in)
 		os.Exit(0)
 	}
@@ -67,11 +67,11 @@ func displayVersionsVaultKeyV2(in string) {
 		logrus.Fatal("Vault Version JSON conversion failed.")
 	}
 
-	if !formatOverridden {
-		outputFormat = "text"
+	if !FormatOverridden {
+		OutputFormat = "text"
 	}
 
-	switch strings.ToLower(outputFormat) {
+	switch strings.ToLower(OutputFormat) {
 	case "json":
 		vkData.ToJSON()
 	case "gron":
@@ -79,7 +79,7 @@ func displayVersionsVaultKeyV2(in string) {
 	case "yaml":
 		vkData.ToYAML()
 	case "text", "table":
-		vkData.ToTEXT(noHeaders)
+		vkData.ToTEXT(NoHeaders)
 	}
 }
 
@@ -90,9 +90,9 @@ func getVaultKeyVersionData(keypath string) (string, error) {
 	resp, resperr := restClient.R().
 		SetHeader("Content-Type", "application/json").
 		SetHeader("Accept", "application/json").
-		SetHeader("X-Token-Bearer", authClient.GetTokenBearer()).
-		SetHeader("X-Token-Session", authClient.GetSessionID()).
-		Get(fmt.Sprintf("%s/%s", apiServer, uri))
+		SetHeader("X-Token-Bearer", AuthClient.GetTokenBearer()).
+		SetHeader("X-Token-Session", AuthClient.GetSessionID()).
+		Get(fmt.Sprintf("%s/%s", ApiServer, uri))
 
 	if resperr != nil {
 		logrus.WithError(resperr).Error("Error getting Default CR Info")

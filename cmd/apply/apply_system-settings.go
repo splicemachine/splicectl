@@ -1,4 +1,4 @@
-package cmd
+package apply
 
 import (
 	"encoding/json"
@@ -10,6 +10,7 @@ import (
 	"github.com/blang/semver/v4"
 	"github.com/go-resty/resty/v2"
 	"github.com/sirupsen/logrus"
+	c "github.com/splicemachine/splicectl/cmd"
 	"github.com/splicemachine/splicectl/cmd/objects"
 	"github.com/splicemachine/splicectl/common"
 
@@ -28,7 +29,7 @@ var applySystemSettingsCmd = &cobra.Command{
 
 		var sv semver.Version
 
-		_, sv = versionDetail.RequirementMet("apply_system-settings")
+		_, sv = c.VersionDetail.RequirementMet("apply_system-settings")
 
 		filePath, _ := cmd.Flags().GetString("file")
 		fileBytes, _ := ioutil.ReadFile(filePath)
@@ -68,7 +69,7 @@ func displayApplySystemSettingsV1(in string) {
 }
 
 func displayApplySystemSettingsV2(in string) {
-	if strings.ToLower(outputFormat) == "raw" {
+	if strings.ToLower(c.OutputFormat) == "raw" {
 		fmt.Println(in)
 		os.Exit(0)
 	}
@@ -79,10 +80,10 @@ func displayApplySystemSettingsV2(in string) {
 	}
 
 	if !formatOverridden {
-		outputFormat = "text"
+		c.OutputFormat = "text"
 	}
 
-	switch strings.ToLower(outputFormat) {
+	switch strings.ToLower(c.OutputFormat) {
 	case "json":
 		vvData.ToJSON()
 	case "gron":

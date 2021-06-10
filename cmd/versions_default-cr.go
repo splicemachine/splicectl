@@ -23,7 +23,7 @@ var versionsDefaultCRCmd = &cobra.Command{
 
 		var sv semver.Version
 
-		_, sv = versionDetail.RequirementMet("versions_default-cr")
+		_, sv = VersionDetail.RequirementMet("versions_default-cr")
 
 		out, err := getDefaultCRVersions()
 		if err != nil {
@@ -54,7 +54,7 @@ func displayVersionsDefaultCRV1(in string) {
 }
 
 func displayVersionsDefaultCRV2(in string) {
-	if strings.ToLower(outputFormat) == "raw" {
+	if strings.ToLower(OutputFormat) == "raw" {
 		fmt.Println(in)
 		os.Exit(0)
 	}
@@ -63,11 +63,11 @@ func displayVersionsDefaultCRV2(in string) {
 		logrus.Fatal("Vault Version JSON conversion failed.")
 	}
 
-	if !formatOverridden {
-		outputFormat = "text"
+	if !FormatOverridden {
+		OutputFormat = "text"
 	}
 
-	switch strings.ToLower(outputFormat) {
+	switch strings.ToLower(OutputFormat) {
 	case "json":
 		crData.ToJSON()
 	case "gron":
@@ -75,7 +75,7 @@ func displayVersionsDefaultCRV2(in string) {
 	case "yaml":
 		crData.ToYAML()
 	case "text", "table":
-		crData.ToTEXT(noHeaders)
+		crData.ToTEXT(NoHeaders)
 	}
 
 }
@@ -87,9 +87,9 @@ func getDefaultCRVersions() (string, error) {
 	resp, resperr := restClient.R().
 		SetHeader("Content-Type", "application/json").
 		SetHeader("Accept", "application/json").
-		SetHeader("X-Token-Bearer", authClient.GetTokenBearer()).
-		SetHeader("X-Token-Session", authClient.GetSessionID()).
-		Get(fmt.Sprintf("%s/%s", apiServer, uri))
+		SetHeader("X-Token-Bearer", AuthClient.GetTokenBearer()).
+		SetHeader("X-Token-Session", AuthClient.GetSessionID()).
+		Get(fmt.Sprintf("%s/%s", ApiServer, uri))
 
 	if resperr != nil {
 		logrus.WithError(resperr).Error("Error getting Default CR Info")

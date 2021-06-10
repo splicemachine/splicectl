@@ -21,7 +21,7 @@ var (
 	gitCommit     string
 	buildDate     string
 	gitRef        string
-	versionDetail objects.Version
+	VersionDetail objects.Version
 	versionJSON   string
 	cfgFile       string
 	serverURI     string
@@ -30,17 +30,17 @@ var (
 // var sessionID string
 // var tokenBearer string
 // var tokenValid bool
-var apiServer string
-var outputFormat string
-var formatOverridden bool
-var noHeaders bool
-var authClient auth.Client
+var ApiServer string
+var OutputFormat string
+var FormatOverridden bool
+var NoHeaders bool
+var AuthClient auth.Client
 
-// rootCmd represents the base command when called without any subcommands
+// RootCmd represents the base command when called without any subcommands
 // splicectl doesn't have any functionality, other than to validate our auth
 // token.  A VALID auth token is required to run ANY command other than the
 // 'auth' command.
-var rootCmd = &cobra.Command{
+var RootCmd = &cobra.Command{
 	Use:   "splicectl",
 	Short: "Splice Machine control application for Kubernetes environments",
 	Long: `splicectl is a CLI tool for making managment of Splice Machine
@@ -48,37 +48,37 @@ database clusters under Kubernetes easier to manage.`,
 	Args: cobra.MinimumNArgs(1),
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 
-		apiServer = getIngressDetail()
+		ApiServer = getIngressDetail()
 		if len(serverURI) > 0 {
-			apiServer = serverURI
+			ApiServer = serverURI
 		}
 
 		// Collect the version info, for use in determining valid commands based on SemVer
-		if apiServer != "" {
+		if ApiServer != "" {
 			version, err := getVersionInfo()
 			if err != nil {
 				logrus.WithError(err).Error("Error getting version info")
 			}
 			clientLine := fmt.Sprintf("\"Client\": {\"SemVer\": \"%s\", \"GitCommit\": \"%s\", \"BuildDate\": \"%s\"},", semVer, gitCommit, buildDate)
 			serverLine := fmt.Sprintf("\"Server\": %s},", version)
-			hostLine := fmt.Sprintf("\"Host\": \"%s\"", apiServer)
+			hostLine := fmt.Sprintf("\"Host\": \"%s\"", ApiServer)
 			versionJSON = fmt.Sprintf("{\"VersionInfo\": {\n%s\n%s\n%s\n}", clientLine, serverLine, hostLine)
 		} else {
 			clientLine := fmt.Sprintf("\"Client\": {\"SemVer\": \"%s\", \"GitCommit\": \"%s\", \"BuildDate\": \"%s\"}}", semVer, gitCommit, buildDate)
 			versionJSON = fmt.Sprintf("{\"VersionInfo\": {%s}", clientLine)
 		}
-		marsherr := json.Unmarshal([]byte(versionJSON), &versionDetail)
+		marsherr := json.Unmarshal([]byte(versionJSON), &VersionDetail)
 		if marsherr != nil {
 			logrus.WithError(marsherr).Error("Error decoding json for Version")
 		}
 
 		if os.Args[1] != "version" {
 			environment := getEnvironmentName()
-			authClient = auth.NewAuth(environment, common.SessionData{
+			AuthClient = auth.NewAuth(environment, common.SessionData{
 				SessionID:  fmt.Sprintf("%s", viper.Get(fmt.Sprintf("%s-session_id", environment))),
 				ValidUntil: fmt.Sprintf("%s", viper.Get(fmt.Sprintf("%s-valid_until", environment))),
 			})
-			isValid := authClient.CheckTokenValidity()
+			isValid := AuthClient.CheckTokenValidity()
 			if !isValid && os.Args[1] != "auth" {
 				logrus.Info("Your session has expired, please run the 'auth' again.")
 				os.Exit(1)
@@ -87,9 +87,9 @@ database clusters under Kubernetes easier to manage.`,
 
 		// Validate global parameters here, BEFORE we start to waste time
 		// and run any code.
-		if outputFormat != "" {
-			outputFormat = strings.ToLower(outputFormat)
-			switch outputFormat {
+		if OutputFormat != "" {
+			OutputFormat = strings.ToLower(OutputFormat)
+			switch OutputFormat {
 			case "json":
 			case "gron":
 			case "yaml":
@@ -100,10 +100,10 @@ database clusters under Kubernetes easier to manage.`,
 				fmt.Println("Valid options for -o are [json|gron|[text|table]|yaml|raw]")
 				os.Exit(1)
 			}
-			formatOverridden = true
+			FormatOverridden = true
 		} else {
-			formatOverridden = false
-			outputFormat = "json"
+			FormatOverridden = false
+			OutputFormat = "json"
 		}
 	},
 }
@@ -111,7 +111,7 @@ database clusters under Kubernetes easier to manage.`,
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
-	if err := rootCmd.Execute(); err != nil {
+	if err := RootCmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
@@ -119,10 +119,10 @@ func Execute() {
 
 func init() {
 	cobra.OnInitialize(initConfig)
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.splicectl/config.yml)")
-	rootCmd.PersistentFlags().StringVar(&serverURI, "server-uri", "", "override the server uri for the API server http(s)://host.domain.name:overrideport")
-	rootCmd.PersistentFlags().StringVarP(&outputFormat, "output", "o", "", "output types: json, text, yaml, gron")
-	rootCmd.PersistentFlags().BoolVar(&noHeaders, "no-headers", false, "Suppress header output in Text output")
+	RootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.splicectl/config.yml)")
+	RootCmd.PersistentFlags().StringVar(&serverURI, "server-uri", "", "override the server uri for the API server http(s)://host.domain.name:overrideport")
+	RootCmd.PersistentFlags().StringVarP(&OutputFormat, "output", "o", "", "output types: json, text, yaml, gron")
+	RootCmd.PersistentFlags().BoolVar(&NoHeaders, "no-headers", false, "Suppress header output in Text output")
 }
 
 func initConfig() {

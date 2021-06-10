@@ -11,7 +11,7 @@ import (
 	"github.com/splicemachine/splicectl/cmd/objects"
 )
 
-func promptForCSP() (string, error) {
+func PromptForCSP() (string, error) {
 
 	cspList := []string{
 		"NONE",
@@ -51,7 +51,7 @@ func promptForCSP() (string, error) {
 
 }
 
-func promptForAccountID() (string, error) {
+func PromptForAccountID() (string, error) {
 	out, err := getAccounts()
 	if err != nil {
 		logrus.WithError(err).Error("Error getting Default CR Info")
@@ -99,7 +99,7 @@ func promptForAccountID() (string, error) {
 	return acctID, nil
 }
 
-func promptForDatabaseName() (string, error) {
+func PromptForDatabaseName() (string, error) {
 	out, err := getDatabaseList()
 	if err != nil {
 		logrus.WithError(err).Error("Error getting Database List")

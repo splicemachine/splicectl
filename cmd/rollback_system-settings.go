@@ -25,7 +25,7 @@ var rollbackSystemSettingsCmd = &cobra.Command{
 
 		var sv semver.Version
 
-		_, sv = versionDetail.RequirementMet("rollback_system-settings")
+		_, sv = VersionDetail.RequirementMet("rollback_system-settings")
 
 		version, _ := cmd.Flags().GetInt("version")
 		out, err := rollbackSystemSettings(version)
@@ -57,7 +57,7 @@ func displayRollbackSystemSettingsV1(in string) {
 }
 
 func displayRollbackSystemSettingsV2(in string) {
-	if strings.ToLower(outputFormat) == "raw" {
+	if strings.ToLower(OutputFormat) == "raw" {
 		fmt.Println(in)
 		os.Exit(0)
 	}
@@ -67,11 +67,11 @@ func displayRollbackSystemSettingsV2(in string) {
 		logrus.Fatal("Could not unmarshall data", marshErr)
 	}
 
-	if !formatOverridden {
-		outputFormat = "text"
+	if !FormatOverridden {
+		OutputFormat = "text"
 	}
 
-	switch strings.ToLower(outputFormat) {
+	switch strings.ToLower(OutputFormat) {
 	case "json":
 		vvData.ToJSON()
 	case "gron":
@@ -79,7 +79,7 @@ func displayRollbackSystemSettingsV2(in string) {
 	case "yaml":
 		vvData.ToYAML()
 	case "text", "table":
-		vvData.ToTEXT(noHeaders)
+		vvData.ToTEXT(NoHeaders)
 	}
 }
 
@@ -90,9 +90,9 @@ func rollbackSystemSettings(ver int) (string, error) {
 	resp, resperr := restClient.R().
 		SetHeader("Content-Type", "application/json").
 		SetHeader("Accept", "application/json").
-		SetHeader("X-Token-Bearer", authClient.GetTokenBearer()).
-		SetHeader("X-Token-Session", authClient.GetSessionID()).
-		Post(fmt.Sprintf("%s/%s", apiServer, uri))
+		SetHeader("X-Token-Bearer", AuthClient.GetTokenBearer()).
+		SetHeader("X-Token-Session", AuthClient.GetSessionID()).
+		Post(fmt.Sprintf("%s/%s", ApiServer, uri))
 
 	if resperr != nil {
 		logrus.WithError(resperr).Error("Error rolling back System Settings")

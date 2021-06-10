@@ -1,4 +1,4 @@
-package cmd
+package apply
 
 import (
 	"encoding/json"
@@ -10,6 +10,7 @@ import (
 	"github.com/blang/semver/v4"
 	"github.com/go-resty/resty/v2"
 	"github.com/sirupsen/logrus"
+	c "github.com/splicemachine/splicectl/cmd"
 	"github.com/splicemachine/splicectl/cmd/objects"
 	"github.com/splicemachine/splicectl/common"
 
@@ -36,11 +37,11 @@ var applyDatabaseCRCmd = &cobra.Command{
 		var dberr error
 		var sv semver.Version
 
-		_, sv = versionDetail.RequirementMet("apply_database-cr")
+		_, sv = c.VersionDetail.RequirementMet("apply_database-cr")
 
 		databaseName := common.DatabaseName(cmd)
 		if len(databaseName) == 0 {
-			databaseName, dberr = promptForDatabaseName()
+			databaseName, dberr = c.PromptForDatabaseName()
 			if dberr != nil {
 				logrus.Fatal("Could not get a list of Databases", dberr)
 			}
@@ -84,7 +85,7 @@ func displayApplyDatabaseCRV1(in string) {
 
 func displayApplyDatabaseCRV2(in string) {
 
-	if strings.ToLower(outputFormat) == "raw" {
+	if strings.ToLower(c.OutputFormat) == "raw" {
 		fmt.Println(in)
 		os.Exit(0)
 	}
@@ -95,10 +96,10 @@ func displayApplyDatabaseCRV2(in string) {
 	}
 
 	if !formatOverridden {
-		outputFormat = "text"
+		c.OutputFormat = "text"
 	}
 
-	switch strings.ToLower(outputFormat) {
+	switch strings.ToLower(c.OutputFormat) {
 	case "json":
 		vvData.ToJSON()
 	case "gron":

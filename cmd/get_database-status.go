@@ -29,11 +29,11 @@ var getDatabaseStatus = &cobra.Command{
 		var dberr error
 		var sv semver.Version
 
-		_, sv = versionDetail.RequirementMet("get_database-status")
+		_, sv = VersionDetail.RequirementMet("get_database-status")
 
 		databaseName := common.DatabaseName(cmd)
 		if len(databaseName) == 0 {
-			databaseName, dberr = promptForDatabaseName()
+			databaseName, dberr = PromptForDatabaseName()
 			if dberr != nil {
 				logrus.Fatal("Could not get name of Database", dberr)
 			}
@@ -67,9 +67,9 @@ func getDatabaseStatusData(databaseName string) (string, error) {
 	resp, resperr := restClient.R().
 		SetHeader("Content-Type", "application/json").
 		SetHeader("Accept", "application/json").
-		SetHeader("X-Token-Bearer", authClient.GetTokenBearer()).
-		SetHeader("X-Token-Session", authClient.GetSessionID()).
-		Get(fmt.Sprintf("%s/%s", apiServer, uri))
+		SetHeader("X-Token-Bearer", AuthClient.GetTokenBearer()).
+		SetHeader("X-Token-Session", AuthClient.GetSessionID()).
+		Get(fmt.Sprintf("%s/%s", ApiServer, uri))
 
 	if resperr != nil {
 		logrus.WithError(resperr).Error("Error getting Database status info")

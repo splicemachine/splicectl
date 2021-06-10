@@ -1,4 +1,4 @@
-package cmd
+package apply
 
 import (
 	"encoding/json"
@@ -10,6 +10,7 @@ import (
 	"github.com/blang/semver/v4"
 	"github.com/go-resty/resty/v2"
 	"github.com/sirupsen/logrus"
+	c "github.com/splicemachine/splicectl/cmd"
 	"github.com/splicemachine/splicectl/cmd/objects"
 	"github.com/splicemachine/splicectl/common"
 
@@ -28,7 +29,7 @@ var applyVaultKeyCmd = &cobra.Command{
 
 		var sv semver.Version
 
-		_, sv = versionDetail.RequirementMet("apply_vault-key")
+		_, sv = c.VersionDetail.RequirementMet("apply_vault-key")
 
 		keyPath, _ := cmd.Flags().GetString("keypath")
 		if strings.HasPrefix(keyPath, "secrets/") {
@@ -71,7 +72,7 @@ func displayApplyVaultKeyV1(in string) {
 }
 
 func displayApplyVaultKeyV2(in string) {
-	if strings.ToLower(outputFormat) == "raw" {
+	if strings.ToLower(c.OutputFormat) == "raw" {
 		fmt.Println(in)
 		os.Exit(0)
 	}
@@ -83,10 +84,10 @@ func displayApplyVaultKeyV2(in string) {
 	}
 
 	if !formatOverridden {
-		outputFormat = "text"
+		c.OutputFormat = "text"
 	}
 
-	switch strings.ToLower(outputFormat) {
+	switch strings.ToLower(c.OutputFormat) {
 	case "json":
 		vvData.ToJSON()
 	case "gron":

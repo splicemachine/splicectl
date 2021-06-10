@@ -24,12 +24,12 @@ var getImageTag = &cobra.Command{
 		var dberr error
 		var sv semver.Version
 
-		_, sv = versionDetail.RequirementMet("get_image-tag")
+		_, sv = VersionDetail.RequirementMet("get_image-tag")
 
 		componentName, _ := cmd.Flags().GetString("component-name")
 		databaseName, _ := cmd.Flags().GetString("database-name")
 		if len(databaseName) == 0 {
-			databaseName, dberr = promptForDatabaseName()
+			databaseName, dberr = PromptForDatabaseName()
 			if dberr != nil {
 				logrus.Fatal("Could not get a list of Databases", dberr)
 			}
@@ -64,7 +64,7 @@ func displayGetImageTagV1(in string) {
 }
 
 func displayGetImageTagV2(in string) {
-	if strings.ToLower(outputFormat) == "raw" {
+	if strings.ToLower(OutputFormat) == "raw" {
 		fmt.Println(in)
 		os.Exit(0)
 	}
@@ -76,15 +76,15 @@ func displayGetImageTagV2(in string) {
 		logrus.Fatal("Could not unmarshall data", marshErr)
 	}
 
-	if !formatOverridden {
-		outputFormat = "table"
+	if !FormatOverridden {
+		OutputFormat = "table"
 	}
 
 	tagList := objects.ImageTagList{
 		ImageTags: tags,
 	}
 
-	switch strings.ToLower(outputFormat) {
+	switch strings.ToLower(OutputFormat) {
 	case "json":
 		tagList.ToJSON()
 	case "gron":
@@ -92,7 +92,7 @@ func displayGetImageTagV2(in string) {
 	case "yaml":
 		tagList.ToYAML()
 	case "text", "table":
-		tagList.ToTEXT(noHeaders)
+		tagList.ToTEXT(NoHeaders)
 	}
 
 }
@@ -105,9 +105,9 @@ func getImageTagData(componenetName string, databaseName string) (string, error)
 	resp, resperr := restClient.R().
 		SetHeader("Content-Type", "application/json").
 		SetHeader("Accept", "application/json").
-		SetHeader("X-Token-Bearer", authClient.GetTokenBearer()).
-		SetHeader("X-Token-Session", authClient.GetSessionID()).
-		Get(fmt.Sprintf("%s/%s", apiServer, uri))
+		SetHeader("X-Token-Bearer", AuthClient.GetTokenBearer()).
+		SetHeader("X-Token-Session", AuthClient.GetSessionID()).
+		Get(fmt.Sprintf("%s/%s", ApiServer, uri))
 
 	if resperr != nil {
 		logrus.WithError(resperr).Error("Error getting Default CR Info")

@@ -15,22 +15,22 @@ var versionCmd = &cobra.Command{
 	Aliases: []string{"v"},
 	Run: func(cmd *cobra.Command, args []string) {
 
-		if !formatOverridden {
-			outputFormat = "yaml"
+		if !FormatOverridden {
+			OutputFormat = "yaml"
 		}
 
-		switch strings.ToLower(outputFormat) {
+		switch strings.ToLower(OutputFormat) {
 		case "raw":
 			fmt.Println(versionJSON)
 		case "json":
 			// We want to print the JSON in a condensed format
 			fmt.Println(versionJSON)
 		case "gron":
-			versionDetail.ToGRON()
+			VersionDetail.ToGRON()
 		case "yaml":
-			versionDetail.ToYAML()
+			VersionDetail.ToYAML()
 		case "text", "table":
-			versionDetail.ToTEXT(noHeaders)
+			VersionDetail.ToTEXT(NoHeaders)
 		}
 	},
 }
@@ -44,7 +44,7 @@ func getVersionInfo() (string, error) {
 		SetHeader("Accept", "application/json").
 		// SetHeader("X-Token-Bearer", authClient.GetTokenBearer()).
 		// SetHeader("X-Token-Session", authClient.GetSessionID()).
-		Get(fmt.Sprintf("%s/%s", apiServer, uri))
+		Get(fmt.Sprintf("%s/%s", ApiServer, uri))
 
 	if resperr != nil {
 		logrus.WithError(resperr).Error("Error getting version info")
@@ -56,5 +56,5 @@ func getVersionInfo() (string, error) {
 }
 
 func init() {
-	rootCmd.AddCommand(versionCmd)
+	RootCmd.AddCommand(versionCmd)
 }

@@ -34,12 +34,12 @@ var restartDatabaseCmd = &cobra.Command{
 		var dberr error
 		var sv semver.Version
 
-		_, sv = versionDetail.RequirementMet("restart_database")
+		_, sv = VersionDetail.RequirementMet("restart_database")
 
 		databaseName := common.DatabaseName(cmd)
 		forceRestart, _ := cmd.Flags().GetBool("force")
 		if len(databaseName) == 0 {
-			databaseName, dberr = promptForDatabaseName()
+			databaseName, dberr = PromptForDatabaseName()
 			if dberr != nil {
 				logrus.Fatal("Could not get a list of Databases", dberr)
 			}
@@ -60,7 +60,7 @@ var restartDatabaseCmd = &cobra.Command{
 }
 
 func displayRestartDatabaseV1(in string) {
-	if strings.ToLower(outputFormat) == "raw" {
+	if strings.ToLower(OutputFormat) == "raw" {
 		fmt.Println(in)
 		os.Exit(0)
 	}
@@ -70,11 +70,11 @@ func displayRestartDatabaseV1(in string) {
 		logrus.Fatal("Could not unmarshall data", marshErr)
 	}
 
-	if !formatOverridden {
-		outputFormat = "text"
+	if !FormatOverridden {
+		OutputFormat = "text"
 	}
 
-	switch strings.ToLower(outputFormat) {
+	switch strings.ToLower(OutputFormat) {
 	case "json":
 		asData.ToJSON()
 	case "gron":
@@ -82,7 +82,7 @@ func displayRestartDatabaseV1(in string) {
 	case "yaml":
 		asData.ToYAML()
 	case "text", "table":
-		asData.ToTEXT(noHeaders)
+		asData.ToTEXT(NoHeaders)
 	}
 }
 
@@ -93,9 +93,9 @@ func restartDatabase(dbname string, force bool) (string, error) {
 	resp, resperr := restClient.R().
 		SetHeader("Content-Type", "application/json").
 		SetHeader("Accept", "application/json").
-		SetHeader("X-Token-Bearer", authClient.GetTokenBearer()).
-		SetHeader("X-Token-Session", authClient.GetSessionID()).
-		Post(fmt.Sprintf("%s/%s", apiServer, uri))
+		SetHeader("X-Token-Bearer", AuthClient.GetTokenBearer()).
+		SetHeader("X-Token-Session", AuthClient.GetSessionID()).
+		Post(fmt.Sprintf("%s/%s", ApiServer, uri))
 
 	if resperr != nil {
 		logrus.WithError(resperr).Error("Error restarting the database")

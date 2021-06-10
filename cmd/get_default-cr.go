@@ -26,7 +26,7 @@ var getDefaultCRCmd = &cobra.Command{
 
 		var sv semver.Version
 
-		_, sv = versionDetail.RequirementMet("get_default-cr")
+		_, sv = VersionDetail.RequirementMet("get_default-cr")
 
 		version, _ := cmd.Flags().GetInt("version")
 		out, err := getDefaultCR(version)
@@ -59,7 +59,7 @@ func displayGetDefaultCRV1(in string) {
 }
 
 func displayGetDefaultCRV2(in string) {
-	if strings.ToLower(outputFormat) == "raw" {
+	if strings.ToLower(OutputFormat) == "raw" {
 		fmt.Println(in)
 		os.Exit(0)
 	}
@@ -71,11 +71,11 @@ func displayGetDefaultCRV2(in string) {
 		logrus.Fatal("Could not unmarshall data", marshErr)
 	}
 
-	if !formatOverridden {
-		outputFormat = "yaml"
+	if !FormatOverridden {
+		OutputFormat = "yaml"
 	}
 
-	switch strings.ToLower(outputFormat) {
+	switch strings.ToLower(OutputFormat) {
 	case "json":
 		fmt.Println(string(in[:]))
 	case "gron":
@@ -106,9 +106,9 @@ func getDefaultCR(ver int) (string, error) {
 	resp, resperr := restClient.R().
 		SetHeader("Content-Type", "application/json").
 		SetHeader("Accept", "application/json").
-		SetHeader("X-Token-Bearer", authClient.GetTokenBearer()).
-		SetHeader("X-Token-Session", authClient.GetSessionID()).
-		Get(fmt.Sprintf("%s/%s", apiServer, uri))
+		SetHeader("X-Token-Bearer", AuthClient.GetTokenBearer()).
+		SetHeader("X-Token-Session", AuthClient.GetSessionID()).
+		Get(fmt.Sprintf("%s/%s", ApiServer, uri))
 
 	if resperr != nil {
 		logrus.WithError(resperr).Error("Error getting Default CR Info")

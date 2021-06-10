@@ -23,7 +23,7 @@ var getSystemSettingsCmd = &cobra.Command{
 
 		var sv semver.Version
 
-		_, sv = versionDetail.RequirementMet("get_system-settings")
+		_, sv = VersionDetail.RequirementMet("get_system-settings")
 
 		version, _ := cmd.Flags().GetInt("version")
 		decode, _ := cmd.Flags().GetBool("decode-values")
@@ -57,7 +57,7 @@ func displayGetSystemSettingsV1(in string) {
 }
 
 func displayGetSystemSettingsV2(in string, dc bool) {
-	if strings.ToLower(outputFormat) == "raw" {
+	if strings.ToLower(OutputFormat) == "raw" {
 		fmt.Println(in)
 		os.Exit(0)
 	}
@@ -67,11 +67,11 @@ func displayGetSystemSettingsV2(in string, dc bool) {
 		logrus.Fatal("Could not unmarshall data", marshErr)
 	}
 
-	if !formatOverridden {
-		outputFormat = "yaml"
+	if !FormatOverridden {
+		OutputFormat = "yaml"
 	}
 
-	switch strings.ToLower(outputFormat) {
+	switch strings.ToLower(OutputFormat) {
 	case "json":
 		sessData.ToJSON()
 	case "gron":
@@ -79,7 +79,7 @@ func displayGetSystemSettingsV2(in string, dc bool) {
 	case "yaml":
 		sessData.ToYAML()
 	case "text", "table":
-		sessData.ToTEXT(noHeaders, dc)
+		sessData.ToTEXT(NoHeaders, dc)
 	}
 
 }
@@ -91,9 +91,9 @@ func getSystemSettings(ver int) (string, error) {
 	resp, resperr := restClient.R().
 		SetHeader("Content-Type", "application/json").
 		SetHeader("Accept", "application/json").
-		SetHeader("X-Token-Bearer", authClient.GetTokenBearer()).
-		SetHeader("X-Token-Session", authClient.GetSessionID()).
-		Get(fmt.Sprintf("%s/%s", apiServer, uri))
+		SetHeader("X-Token-Bearer", AuthClient.GetTokenBearer()).
+		SetHeader("X-Token-Session", AuthClient.GetSessionID()).
+		Get(fmt.Sprintf("%s/%s", ApiServer, uri))
 
 	if resperr != nil {
 		logrus.WithError(resperr).Error("Error getting System Settings")

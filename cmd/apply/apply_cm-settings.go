@@ -1,4 +1,4 @@
-package cmd
+package apply
 
 import (
 	"encoding/json"
@@ -10,6 +10,7 @@ import (
 	"github.com/blang/semver/v4"
 	"github.com/go-resty/resty/v2"
 	"github.com/sirupsen/logrus"
+	c "github.com/splicemachine/splicectl/cmd"
 	"github.com/splicemachine/splicectl/cmd/objects"
 	"github.com/splicemachine/splicectl/common"
 
@@ -29,7 +30,7 @@ var applyCMSettingsCmd = &cobra.Command{
 
 		var sv semver.Version
 
-		_, sv = versionDetail.RequirementMet("apply_cm-settings")
+		_, sv = c.VersionDetail.RequirementMet("apply_cm-settings")
 
 		component = strings.ToLower(component)
 		if len(component) == 0 || !strings.Contains("ui api", component) {
@@ -59,7 +60,7 @@ var applyCMSettingsCmd = &cobra.Command{
 }
 
 func displayApplyCmSettingsV1(in string) {
-	if strings.ToLower(outputFormat) == "raw" {
+	if strings.ToLower(c.OutputFormat) == "raw" {
 		fmt.Println(in)
 		os.Exit(0)
 	}
@@ -69,11 +70,11 @@ func displayApplyCmSettingsV1(in string) {
 		logrus.Fatal("Could not unmarshall data", marshErr)
 	}
 
-	if !formatOverridden {
-		outputFormat = "text"
+	if !c.FormatOverridden {
+		c.OutputFormat = "text"
 	}
 
-	switch strings.ToLower(outputFormat) {
+	switch strings.ToLower(c.OutputFormat) {
 	case "json":
 		vvData.ToJSON()
 	case "gron":
@@ -81,7 +82,7 @@ func displayApplyCmSettingsV1(in string) {
 	case "yaml":
 		vvData.ToYAML()
 	case "text", "table":
-		vvData.ToTEXT(noHeaders)
+		vvData.ToTEXT(c.NoHeaders)
 	}
 
 }
@@ -90,12 +91,12 @@ func setCMSettings(comp string, in []byte) (string, error) {
 	restClient := resty.New()
 	uri := fmt.Sprintf("splicectl/v1/vault/cmsettings?component=%s", comp)
 	resp, resperr := restClient.R().
-		SetHeader("X-Token-Bearer", authClient.GetTokenBearer()).
-		SetHeader("X-Token-Session", authClient.GetSessionID()).
+		SetHeader("X-Token-Bearer", c.AuthClient.GetTokenBearer()).
+		SetHeader("X-Token-Session", c.AuthClient.GetSessionID()).
 		SetBody(in).
-		SetResult(&AuthSuccess{}). // or SetResult(AuthSuccess{}).
-		SetError(&AuthError{}).    // or SetError(AuthError{}).
-		Post(fmt.Sprintf("%s/%s", apiServer, uri))
+		SetResult(&c.AuthSuccess{}). // or SetResult(AuthSuccess{}).
+		SetError(&c.AuthError{}).    // or SetError(AuthError{}).
+		Post(fmt.Sprintf("%s/%s", c.ApiServer, uri))
 
 	if resperr != nil {
 		logrus.WithError(resperr).Error("Error setting System Settings")

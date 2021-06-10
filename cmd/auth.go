@@ -31,8 +31,8 @@ var authCmd = &cobra.Command{
 		// 	SessionID:  fmt.Sprintf("%s", viper.Get(fmt.Sprintf("%s-session_id", environment))),
 		// 	ValidUntil: fmt.Sprintf("%s", viper.Get(fmt.Sprintf("%s-valid_until", environment))),
 		// })
-		if pass := authClient.CheckTokenValidity(); pass {
-			sessData, err := json.Marshal(authClient.GetSession())
+		if pass := AuthClient.CheckTokenValidity(); pass {
+			sessData, err := json.Marshal(AuthClient.GetSession())
 			if err != nil {
 				logrus.WithError(err).Error("Error converting session data to JSON")
 				return
@@ -68,7 +68,7 @@ func performAuth() (string, error) {
 	resp, resperr := restClient.R().
 		SetHeader("Content-Type", "application/json").
 		SetHeader("Accept", "application/json").
-		Get(fmt.Sprintf("%s/%s", apiServer, uri))
+		Get(fmt.Sprintf("%s/%s", ApiServer, uri))
 
 	if resperr != nil {
 		logrus.WithError(resperr).Error("Error getting Default CR Info")
@@ -80,5 +80,5 @@ func performAuth() (string, error) {
 }
 
 func init() {
-	rootCmd.AddCommand(authCmd)
+	RootCmd.AddCommand(authCmd)
 }

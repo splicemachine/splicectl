@@ -25,7 +25,7 @@ var listDatabaseCmd = &cobra.Command{
 
 		var sv semver.Version
 
-		_, sv = versionDetail.RequirementMet("list_database")
+		_, sv = VersionDetail.RequirementMet("list_database")
 
 		// databaseName, _ := cmd.Flags().GetString("database-name")
 		out, err := getDatabaseList()
@@ -57,7 +57,7 @@ func displayListDatabaseV1(in string) {
 }
 
 func displayListDatabaseV2(in string) {
-	if strings.ToLower(outputFormat) == "raw" {
+	if strings.ToLower(OutputFormat) == "raw" {
 		fmt.Println(in)
 		os.Exit(0)
 	}
@@ -68,11 +68,11 @@ func displayListDatabaseV2(in string) {
 		logrus.Fatal("Could not unmarshall data", marshErr)
 	}
 
-	if !formatOverridden {
-		outputFormat = "table"
+	if !FormatOverridden {
+		OutputFormat = "table"
 	}
 
-	switch strings.ToLower(outputFormat) {
+	switch strings.ToLower(OutputFormat) {
 	case "json":
 		dbList.ToJSON()
 	case "gron":
@@ -80,7 +80,7 @@ func displayListDatabaseV2(in string) {
 	case "yaml":
 		dbList.ToYAML()
 	case "text", "table":
-		dbList.ToTEXT(noHeaders)
+		dbList.ToTEXT(NoHeaders)
 	}
 
 }
@@ -91,9 +91,9 @@ func getDatabaseList() (string, error) {
 	resp, resperr := restClient.R().
 		// SetHeader("Content-Type", "application/json").
 		// SetHeader("Accept", "application/json").
-		SetHeader("X-Token-Bearer", authClient.GetTokenBearer()).
-		SetHeader("X-Token-Session", authClient.GetSessionID()).
-		Execute("LIST", fmt.Sprintf("%s/%s", apiServer, uri))
+		SetHeader("X-Token-Bearer", AuthClient.GetTokenBearer()).
+		SetHeader("X-Token-Session", AuthClient.GetSessionID()).
+		Execute("LIST", fmt.Sprintf("%s/%s", ApiServer, uri))
 
 	if resperr != nil {
 		logrus.WithError(resperr).Error("Error getting Database List")

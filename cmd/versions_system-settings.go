@@ -23,7 +23,7 @@ var versionsSystemSettingsCmd = &cobra.Command{
 
 		var sv semver.Version
 
-		_, sv = versionDetail.RequirementMet("versions_system-settings")
+		_, sv = VersionDetail.RequirementMet("versions_system-settings")
 
 		out, err := getSystemSettingsVersions()
 		if err != nil {
@@ -54,7 +54,7 @@ func displayVersionsSystemSettingsV1(in string) {
 }
 
 func displayVersionsSystemSettingsV2(in string) {
-	if strings.ToLower(outputFormat) == "raw" {
+	if strings.ToLower(OutputFormat) == "raw" {
 		fmt.Println(in)
 		os.Exit(0)
 	}
@@ -63,11 +63,11 @@ func displayVersionsSystemSettingsV2(in string) {
 		logrus.Fatal("Vault Version JSON conversion failed.")
 	}
 
-	if !formatOverridden {
-		outputFormat = "text"
+	if !FormatOverridden {
+		OutputFormat = "text"
 	}
 
-	switch strings.ToLower(outputFormat) {
+	switch strings.ToLower(OutputFormat) {
 	case "json":
 		ssData.ToJSON()
 	case "gron":
@@ -75,7 +75,7 @@ func displayVersionsSystemSettingsV2(in string) {
 	case "yaml":
 		ssData.ToYAML()
 	case "text", "table":
-		ssData.ToTEXT(noHeaders)
+		ssData.ToTEXT(NoHeaders)
 	}
 }
 
@@ -86,9 +86,9 @@ func getSystemSettingsVersions() (string, error) {
 	resp, resperr := restClient.R().
 		SetHeader("Content-Type", "application/json").
 		SetHeader("Accept", "application/json").
-		SetHeader("X-Token-Bearer", authClient.GetTokenBearer()).
-		SetHeader("X-Token-Session", authClient.GetSessionID()).
-		Get(fmt.Sprintf("%s/%s", apiServer, uri))
+		SetHeader("X-Token-Bearer", AuthClient.GetTokenBearer()).
+		SetHeader("X-Token-Session", AuthClient.GetSessionID()).
+		Get(fmt.Sprintf("%s/%s", ApiServer, uri))
 
 	if resperr != nil {
 		logrus.WithError(resperr).Error("Error getting System Settings")

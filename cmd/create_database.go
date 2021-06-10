@@ -51,7 +51,7 @@ var createDatabaseCmd = &cobra.Command{
 
 		var sv semver.Version
 
-		_, sv = versionDetail.RequirementMet("create_database")
+		_, sv = VersionDetail.RequirementMet("create_database")
 
 		// Look for --file first, load that into the structure, then read each
 		// parameters and override the values loaded from the input file
@@ -138,7 +138,7 @@ func populateRequest(cmd *cobra.Command, req *objects.DatabaseRequest, fileData 
 		req.AccountID = accountID
 	} else {
 		if len(req.AccountID) == 0 || !fileData {
-			selectedAccountID, err := promptForAccountID()
+			selectedAccountID, err := PromptForAccountID()
 			if err != nil {
 				requiredList = append(requiredList, "--account-id, obtain from 'splicectl get accounts', or select from list")
 			}
@@ -164,7 +164,7 @@ func populateRequest(cmd *cobra.Command, req *objects.DatabaseRequest, fileData 
 		req.CloudProvider = cloudProvider
 	} else {
 		if len(req.CloudProvider) == 0 || !fileData {
-			selectedCSP, err := promptForCSP()
+			selectedCSP, err := PromptForCSP()
 			if err != nil {
 				requiredList = append(requiredList, "--cloud-provider, (aws|az|gcp|op|none)")
 			}
@@ -214,11 +214,11 @@ func populateRequest(cmd *cobra.Command, req *objects.DatabaseRequest, fileData 
 
 func generateSkel(dbReq *objects.DatabaseRequest) {
 
-	if !formatOverridden {
-		outputFormat = "yaml"
+	if !FormatOverridden {
+		OutputFormat = "yaml"
 	}
 
-	switch strings.ToLower(outputFormat) {
+	switch strings.ToLower(OutputFormat) {
 	case "json", "gron":
 		dbReq.ToJSON()
 	case "yaml", "text", "table":
@@ -239,9 +239,9 @@ func createSpliceDatabase(dbReq *objects.DatabaseRequest, outputonly bool) (stri
 		resp, resperr = restClient.R().
 			SetHeader("Content-Type", "application/json").
 			SetHeader("Accept", "application/json").
-			SetHeader("X-Token-Bearer", authClient.GetTokenBearer()).
-			SetHeader("X-Token-Session", authClient.GetSessionID()).
-			Get(fmt.Sprintf("%s/%s", apiServer, uri))
+			SetHeader("X-Token-Bearer", AuthClient.GetTokenBearer()).
+			SetHeader("X-Token-Session", AuthClient.GetSessionID()).
+			Get(fmt.Sprintf("%s/%s", ApiServer, uri))
 	} else {
 
 		reqJSON, enverr := json.MarshalIndent(dbReq, "", "  ")
@@ -252,10 +252,10 @@ func createSpliceDatabase(dbReq *objects.DatabaseRequest, outputonly bool) (stri
 		resp, resperr = restClient.R().
 			SetHeader("Content-Type", "application/json").
 			SetHeader("Accept", "application/json").
-			SetHeader("X-Token-Bearer", authClient.GetTokenBearer()).
-			SetHeader("X-Token-Session", authClient.GetSessionID()).
+			SetHeader("X-Token-Bearer", AuthClient.GetTokenBearer()).
+			SetHeader("X-Token-Session", AuthClient.GetSessionID()).
 			SetBody(reqJSON).
-			Post(fmt.Sprintf("%s/%s", apiServer, uri))
+			Post(fmt.Sprintf("%s/%s", ApiServer, uri))
 	}
 	if resperr != nil {
 		logrus.WithError(resperr).Error("Error getting Default CR Info")

@@ -31,12 +31,12 @@ var resumeCmd = &cobra.Command{
 		var dberr error
 		var sv semver.Version
 
-		_, sv = versionDetail.RequirementMet("resume")
+		_, sv = VersionDetail.RequirementMet("resume")
 
 		message, _ := cmd.Flags().GetString("message")
 		databaseName := common.DatabaseName(cmd)
 		if len(databaseName) == 0 {
-			databaseName, dberr = promptForDatabaseName()
+			databaseName, dberr = PromptForDatabaseName()
 			if dberr != nil {
 				logrus.Fatal("Could not get a list of workspaces", dberr)
 			}
@@ -101,10 +101,10 @@ func resumeDatabase(db string, msg string) (string, error) {
 	resp, resperr = restClient.R().
 		SetHeader("Content-Type", "application/json").
 		SetHeader("Accept", "application/json").
-		SetHeader("X-Token-Bearer", authClient.GetTokenBearer()).
-		SetHeader("X-Token-Session", authClient.GetSessionID()).
+		SetHeader("X-Token-Bearer", AuthClient.GetTokenBearer()).
+		SetHeader("X-Token-Session", AuthClient.GetSessionID()).
 		SetBody(reqJSON).
-		Post(fmt.Sprintf("%s/%s", apiServer, uri))
+		Post(fmt.Sprintf("%s/%s", ApiServer, uri))
 	if resperr != nil {
 		logrus.WithError(resperr).Error("Error getting Default CR Info")
 		return "", resperr
@@ -115,7 +115,7 @@ func resumeDatabase(db string, msg string) (string, error) {
 }
 
 func init() {
-	rootCmd.AddCommand(resumeCmd)
+	RootCmd.AddCommand(resumeCmd)
 
 	// add database name and aliases
 	resumeCmd.Flags().StringP("database-name", "d", "", "Specify the database name")

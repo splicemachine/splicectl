@@ -31,11 +31,11 @@ var versionsDatabaseCRCmd = &cobra.Command{
 		var dberr error
 		var sv semver.Version
 
-		_, sv = versionDetail.RequirementMet("versions_database-cr")
+		_, sv = VersionDetail.RequirementMet("versions_database-cr")
 
 		databaseName := common.DatabaseName(cmd)
 		if len(databaseName) == 0 {
-			databaseName, dberr = promptForDatabaseName()
+			databaseName, dberr = PromptForDatabaseName()
 			if dberr != nil {
 				logrus.Fatal("Could not get a list of workspaces", dberr)
 			}
@@ -69,7 +69,7 @@ func displayVersionsDatabaseCRV1(in string) {
 }
 
 func displayVersionsDatabaseCRV2(in string) {
-	if strings.ToLower(outputFormat) == "raw" {
+	if strings.ToLower(OutputFormat) == "raw" {
 		fmt.Println(in)
 		os.Exit(0)
 	}
@@ -78,11 +78,11 @@ func displayVersionsDatabaseCRV2(in string) {
 		logrus.Fatal("Vault Version JSON conversion failed.")
 	}
 
-	if !formatOverridden {
-		outputFormat = "text"
+	if !FormatOverridden {
+		OutputFormat = "text"
 	}
 
-	switch strings.ToLower(outputFormat) {
+	switch strings.ToLower(OutputFormat) {
 	case "json":
 		crData.ToJSON()
 	case "gron":
@@ -90,7 +90,7 @@ func displayVersionsDatabaseCRV2(in string) {
 	case "yaml":
 		crData.ToYAML()
 	case "text", "table":
-		crData.ToTEXT(noHeaders)
+		crData.ToTEXT(NoHeaders)
 	}
 }
 
@@ -101,9 +101,9 @@ func getDatabaseCRVersions(db string) (string, error) {
 	resp, resperr := restClient.R().
 		SetHeader("Content-Type", "application/json").
 		SetHeader("Accept", "application/json").
-		SetHeader("X-Token-Bearer", authClient.GetTokenBearer()).
-		SetHeader("X-Token-Session", authClient.GetSessionID()).
-		Get(fmt.Sprintf("%s/%s", apiServer, uri))
+		SetHeader("X-Token-Bearer", AuthClient.GetTokenBearer()).
+		SetHeader("X-Token-Session", AuthClient.GetSessionID()).
+		Get(fmt.Sprintf("%s/%s", ApiServer, uri))
 
 	if resperr != nil {
 		logrus.WithError(resperr).Error("Error getting workspace CR Versions")

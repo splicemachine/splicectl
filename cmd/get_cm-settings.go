@@ -23,7 +23,7 @@ var getCMSettingsCmd = &cobra.Command{
 
 		var sv semver.Version
 
-		_, sv = versionDetail.RequirementMet("get_cm-settings")
+		_, sv = VersionDetail.RequirementMet("get_cm-settings")
 
 		version, _ := cmd.Flags().GetInt("version")
 		component, _ := cmd.Flags().GetString("component")
@@ -47,7 +47,7 @@ var getCMSettingsCmd = &cobra.Command{
 }
 
 func displayGetCmSettingsV1(in string) {
-	if strings.ToLower(outputFormat) == "raw" {
+	if strings.ToLower(OutputFormat) == "raw" {
 		fmt.Println(in)
 		os.Exit(0)
 	}
@@ -58,11 +58,11 @@ func displayGetCmSettingsV1(in string) {
 		logrus.Fatal("Could not unmarshall data", marshErr)
 	}
 
-	if !formatOverridden {
-		outputFormat = "yaml"
+	if !FormatOverridden {
+		OutputFormat = "yaml"
 	}
 
-	switch strings.ToLower(outputFormat) {
+	switch strings.ToLower(OutputFormat) {
 	case "json":
 		sessData.ToJSON()
 	case "gron":
@@ -70,7 +70,7 @@ func displayGetCmSettingsV1(in string) {
 	case "yaml":
 		sessData.ToYAML()
 	case "text", "table":
-		sessData.ToTEXT(noHeaders)
+		sessData.ToTEXT(NoHeaders)
 	}
 
 }
@@ -82,9 +82,9 @@ func getCMSettings(comp string, ver int) (string, error) {
 	resp, resperr := restClient.R().
 		SetHeader("Content-Type", "application/json").
 		SetHeader("Accept", "application/json").
-		SetHeader("X-Token-Bearer", authClient.GetTokenBearer()).
-		SetHeader("X-Token-Session", authClient.GetSessionID()).
-		Get(fmt.Sprintf("%s/%s", apiServer, uri))
+		SetHeader("X-Token-Bearer", AuthClient.GetTokenBearer()).
+		SetHeader("X-Token-Session", AuthClient.GetSessionID()).
+		Get(fmt.Sprintf("%s/%s", ApiServer, uri))
 
 	if resperr != nil {
 		logrus.WithError(resperr).Error("Error getting System Settings")

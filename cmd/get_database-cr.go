@@ -33,11 +33,11 @@ var getDatabaseCRCmd = &cobra.Command{
 		var dberr error
 		var sv semver.Version
 
-		_, sv = versionDetail.RequirementMet("get_database-cr")
+		_, sv = VersionDetail.RequirementMet("get_database-cr")
 
 		databaseName := common.DatabaseName(cmd)
 		if len(databaseName) == 0 {
-			databaseName, dberr = promptForDatabaseName()
+			databaseName, dberr = PromptForDatabaseName()
 			if dberr != nil {
 				logrus.Fatal("Could not get a list of Databases", dberr)
 			}
@@ -77,7 +77,7 @@ func displayGetDatabaseV1(in string, fp string) {
 	os.Exit(0)
 }
 func displayGetDatabaseV2(in string, fp string) {
-	if strings.ToLower(outputFormat) == "raw" {
+	if strings.ToLower(OutputFormat) == "raw" {
 		fmt.Println(in)
 		os.Exit(0)
 	}
@@ -87,11 +87,11 @@ func displayGetDatabaseV2(in string, fp string) {
 		logrus.Fatal("Could not unmarshall data", marshErr)
 	}
 
-	if !formatOverridden {
-		outputFormat = "yaml"
+	if !FormatOverridden {
+		OutputFormat = "yaml"
 	}
 
-	switch strings.ToLower(outputFormat) {
+	switch strings.ToLower(OutputFormat) {
 	case "json":
 		dbCR.ToJSON(fp)
 	case "gron":
@@ -99,7 +99,7 @@ func displayGetDatabaseV2(in string, fp string) {
 	case "yaml":
 		dbCR.ToYAML(fp)
 	case "text", "table":
-		dbCR.ToTEXT(noHeaders)
+		dbCR.ToTEXT(NoHeaders)
 	}
 
 }
@@ -111,9 +111,9 @@ func getDatabaseCR(dbname string, ver int) (string, error) {
 	resp, resperr := restClient.R().
 		SetHeader("Content-Type", "application/json").
 		SetHeader("Accept", "application/json").
-		SetHeader("X-Token-Bearer", authClient.GetTokenBearer()).
-		SetHeader("X-Token-Session", authClient.GetSessionID()).
-		Get(fmt.Sprintf("%s/%s", apiServer, uri))
+		SetHeader("X-Token-Bearer", AuthClient.GetTokenBearer()).
+		SetHeader("X-Token-Session", AuthClient.GetSessionID()).
+		Get(fmt.Sprintf("%s/%s", ApiServer, uri))
 
 	if resperr != nil {
 		logrus.WithError(resperr).Error("Error getting workspace CR Info")
