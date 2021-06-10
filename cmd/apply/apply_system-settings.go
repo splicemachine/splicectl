@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/blang/semver/v4"
-	"github.com/go-resty/resty/v2"
 	"github.com/sirupsen/logrus"
 	c "github.com/splicemachine/splicectl/cmd"
 	"github.com/splicemachine/splicectl/cmd/objects"
@@ -26,10 +25,7 @@ var applySystemSettingsCmd = &cobra.Command{
 	splicectl apply system-settings --file ~/tmp/system-settings.json
 `,
 	Run: func(cmd *cobra.Command, args []string) {
-
-		var sv semver.Version
-
-		_, sv = c.VersionDetail.RequirementMet("apply_system-settings")
+		_, sv := c.VersionDetail.RequirementMet("apply_system-settings")
 
 		filePath, _ := cmd.Flags().GetString("file")
 		fileBytes, _ := ioutil.ReadFile(filePath)
@@ -79,33 +75,14 @@ func displayApplySystemSettingsV2(in string) {
 		logrus.Fatal("Could not unmarshall data", marshErr)
 	}
 
-	if !formatOverridden {
-		c.OutputFormat = "text"
-	}
-
-	switch strings.ToLower(c.OutputFormat) {
-	case "json":
-		vvData.ToJSON()
-	case "gron":
-		vvData.ToGRON()
-	case "yaml":
-		vvData.ToYAML()
-	case "text", "table":
-		vvData.ToTEXT(noHeaders)
-	}
-
+	c.OutputData(&vvData)
 }
 
 func setSystemSettings(in []byte) (string, error) {
-	restClient := resty.New()
 	uri := "splicectl/v1/vault/systemsettings"
-	resp, resperr := restClient.R().
-		SetHeader("X-Token-Bearer", authClient.GetTokenBearer()).
-		SetHeader("X-Token-Session", authClient.GetSessionID()).
+	resp, resperr := c.RestyWithHeaders().
 		SetBody(in).
-		SetResult(&AuthSuccess{}). // or SetResult(AuthSuccess{}).
-		SetError(&AuthError{}).    // or SetError(AuthError{}).
-		Post(fmt.Sprintf("%s/%s", apiServer, uri))
+		Post(fmt.Sprintf("%s/%s", c.ApiServer, uri))
 
 	if resperr != nil {
 		logrus.WithError(resperr).Error("Error setting System Settings")

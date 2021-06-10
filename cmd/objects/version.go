@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/blang/semver/v4"
@@ -88,63 +87,50 @@ func (v *Version) RequirementMet(command string) (semver.Version, semver.Version
 }
 
 // ToJSON - Write the output as JSON
-func (v *Version) ToJSON() error {
-
+func (v *Version) ToJSON() string {
 	versionJSON, enverr := json.MarshalIndent(v, "", "  ")
 	if enverr != nil {
 		logrus.WithError(enverr).Error("Error extracting json")
-		return enverr
+		return ""
 	}
-	fmt.Println(string(versionJSON[:]))
-
-	return nil
-
+	return string(versionJSON[:])
 }
 
 // ToGRON - Write the output as GRON
-func (v *Version) ToGRON() error {
+func (v *Version) ToGRON() string {
 	verJSON, enverr := json.MarshalIndent(v, "", "  ")
 	if enverr != nil {
 		logrus.WithError(enverr).Error("Error extracting json")
-		return enverr
+		return ""
 	}
 
 	subReader := strings.NewReader(string(verJSON[:]))
 	subValues := &bytes.Buffer{}
 	ges := gron.NewGron(subReader, subValues)
 	ges.SetMonochrome(false)
-	serr := ges.ToGron()
-	if serr != nil {
+	if serr := ges.ToGron(); serr != nil {
 		logrus.Error("Problem generating gron syntax", serr)
-		return serr
+		return ""
 	}
-	fmt.Println(string(subValues.Bytes()))
-
-	return nil
-
+	return string(subValues.Bytes())
 }
 
 // ToYAML - Write the output as YAML
-func (v *Version) ToYAML() error {
-
+func (v *Version) ToYAML() string {
 	versionYAML, enverr := yaml.Marshal(v)
 	if enverr != nil {
 		logrus.WithError(enverr).Error("Error extracting yaml")
-		return enverr
+		return ""
 	}
-	fmt.Println(string(versionYAML[:]))
-
-	return nil
-
+	return string(versionYAML[:])
 }
 
-// ToTEXT - Write the output as TEXT
-func (v *Version) ToTEXT(noHeaders bool) error {
-
-	var row []string
+// ToText - Write the output as Text
+func (v *Version) ToTEXT(noHeaders bool) string {
+	buf, row := new(bytes.Buffer), make([]string, 0)
 
 	// ******************** TableWriter *******************************
-	table := tablewriter.NewWriter(os.Stdout)
+	table := tablewriter.NewWriter(buf)
 	if !noHeaders {
 		table.SetHeader([]string{"COMPONENT", "VERSION"})
 		table.SetHeaderAlignment(tablewriter.ALIGN_LEFT)
@@ -166,6 +152,5 @@ func (v *Version) ToTEXT(noHeaders bool) error {
 
 	table.Render()
 
-	return nil
-
+	return buf.String()
 }

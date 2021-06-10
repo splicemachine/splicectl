@@ -2,7 +2,7 @@ package apply
 
 import (
 	"github.com/spf13/cobra"
-	"github.com/splicemachine/splicectl/cmd"
+	c "github.com/splicemachine/splicectl/cmd"
 )
 
 var applyCmd = &cobra.Command{
@@ -18,5 +18,5 @@ var applyCmd = &cobra.Command{
 }
 
 func init() {
-	cmd.RootCmd.AddCommand(applyCmd)
+	c.RootCmd.AddCommand(applyCmd)
 }

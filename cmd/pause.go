@@ -29,9 +29,7 @@ var pauseCmd = &cobra.Command{
 	option was chosen if more than one were supplied.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		var dberr error
-		var sv semver.Version
-
-		_, sv = VersionDetail.RequirementMet("pause")
+		_, sv := VersionDetail.RequirementMet("pause")
 
 		message, _ := cmd.Flags().GetString("message")
 		databaseName := common.DatabaseName(cmd)
@@ -67,7 +65,7 @@ func displayPauseDatabaseV1(in string) {
 }
 
 func isDatabaseActive(db string) bool {
-	dbJSON, err := getDatabaseList()
+	dbJSON, err := GetDatabaseList()
 	if err != nil {
 		logrus.WithError(err).Fatal("Error retreiving ClusterId list")
 	}
@@ -90,19 +88,13 @@ func isDatabaseActive(db string) bool {
 }
 
 func pauseDatabase(db string, msg string) (string, error) {
-	restClient := resty.New()
-
 	uri := "splicectl/v1/splicedb/splicedatabasepause"
 
 	var resp *resty.Response
 	var resperr error
 
 	reqJSON := fmt.Sprintf("{ \"appId\": \"%s\", \"message\": \"%s\" }", db, msg)
-	resp, resperr = restClient.R().
-		SetHeader("Content-Type", "application/json").
-		SetHeader("Accept", "application/json").
-		SetHeader("X-Token-Bearer", AuthClient.GetTokenBearer()).
-		SetHeader("X-Token-Session", AuthClient.GetSessionID()).
+	resp, resperr = RestyWithHeaders().
 		SetBody(reqJSON).
 		Post(fmt.Sprintf("%s/%s", ApiServer, uri))
 	if resperr != nil {

@@ -11,18 +11,27 @@ import (
 	"github.com/splicemachine/splicectl/cmd/objects"
 )
 
-func PromptForCSP() (string, error) {
+type (
+	cspAnswer struct {
+		CSP string `survey:"cspselect"`
+	}
+	accountIDAnswer struct {
+		AccountID string `survey:"accountid"`
+	}
+	databaseAnswer struct {
+		DatabaseName string `survey:"databasename"` // or you can tag fields to match a specific name
+	}
+)
 
-	cspList := []string{
+var (
+	cspList = []string{
 		"NONE",
 		"OP",
 		"AWS",
 		"AZ",
 		"GCP",
 	}
-
-	// the questions to ask
-	var qs = []*survey.Question{
+	cspSurvey = []*survey.Question{
 		{
 			Name: "cspselect",
 			Prompt: &survey.Select{
@@ -31,46 +40,40 @@ func PromptForCSP() (string, error) {
 			},
 		},
 	}
-	// the answers will be written to this struct
-	answers := struct {
-		CSP string `survey:"cspselect"` // or you can tag fields to match a specific name
-	}{}
+	cspAnswers       = &cspAnswer{}
+	accountIDAnswers = &accountIDAnswer{}
+	databaseAnswers  = &databaseAnswer{}
+)
 
+// PromptForCSP - prompt the user on the command line for cloud service provider
+func PromptForCSP() (string, error) {
 	opts := survey.WithStdio(os.Stdin, os.Stderr, os.Stderr)
-
-	// perform the questions
-	err := survey.Ask(qs, &answers, opts)
-	if err != nil {
-		// logrus.Fatal("No accounts on the list")
-		// // fmt.Println(err.Error())
-		// // return
+	if err := survey.Ask(cspSurvey, cspAnswers, opts); err != nil {
 		return "", err
 	}
-
-	return answers.CSP, nil
-
+	return cspAnswers.CSP, nil
 }
 
+// PromptForAccountID - prompt the user on the command line for account id
 func PromptForAccountID() (string, error) {
-	out, err := getAccounts()
+	out, err := GetAccounts()
 	if err != nil {
 		logrus.WithError(err).Error("Error getting Default CR Info")
 		return "", err
 	}
 
 	var accounts objects.AccountList
-
-	marshErr := json.Unmarshal([]byte(out), &accounts)
-	if marshErr != nil {
-		logrus.Fatal("Could not unmarshall data", marshErr)
+	if err := json.Unmarshal([]byte(out), &accounts); err != nil {
+		logrus.Fatal("Could not unmarshall data", err)
 	}
 
-	var acctArray []string
+	acctArray := make([]string, 0)
 	for _, v := range accounts.Accounts {
-		acctArray = append(acctArray, fmt.Sprintf("%s (%s, %s <%s>)", v.AccountID, v.LastName, v.FirstName, v.EMail))
+		accountID := fmt.Sprintf("%s (%s, %s <%s>)", v.AccountID, v.LastName, v.FirstName, v.EMail)
+		acctArray = append(acctArray, accountID)
 	}
-	// the questions to ask
-	var qs = []*survey.Question{
+
+	accountIDSurvey := []*survey.Question{
 		{
 			Name: "accountid",
 			Prompt: &survey.Select{
@@ -79,28 +82,21 @@ func PromptForAccountID() (string, error) {
 			},
 		},
 	}
-	// the answers will be written to this struct
-	answers := struct {
-		AccountID string `survey:"accountid"` // or you can tag fields to match a specific name
-	}{}
 
 	opts := survey.WithStdio(os.Stdin, os.Stderr, os.Stderr)
 
 	// perform the questions
-	err = survey.Ask(qs, &answers, opts)
-	if err != nil {
-		// logrus.Fatal("No accounts on the list")
-		// // fmt.Println(err.Error())
-		// // return
+	if err = survey.Ask(accountIDSurvey, accountIDAnswers, opts); err != nil {
 		return "", err
 	}
 
-	acctID := strings.TrimSpace(strings.Split(answers.AccountID, "(")[0])
+	acctID := strings.TrimSpace(strings.Split(accountIDAnswers.AccountID, "(")[0])
 	return acctID, nil
 }
 
+// PromptForDatabaseName - prompt the user on the command line for name
 func PromptForDatabaseName() (string, error) {
-	out, err := getDatabaseList()
+	out, err := GetDatabaseList()
 	if err != nil {
 		logrus.WithError(err).Error("Error getting Database List")
 		return "", err
@@ -115,8 +111,9 @@ func PromptForDatabaseName() (string, error) {
 	for _, v := range dbList.Clusters {
 		dbArray = append(dbArray, v.DcosAppId)
 	}
+
 	// the questions to ask
-	var qs = []*survey.Question{
+	var databaseSurvey = []*survey.Question{
 		{
 			Name: "databasename",
 			Prompt: &survey.Select{
@@ -125,27 +122,12 @@ func PromptForDatabaseName() (string, error) {
 			},
 		},
 	}
-	// the answers will be written to this struct
-	answers := struct {
-		DatabaseName string `survey:"databasename"` // or you can tag fields to match a specific name
-	}{}
 
-	// opts := survey.AskOptions{
-	// 	Stdio: terminal.Stdio{
-	// 		In:  os.Stdin,
-	// 		Out: os.Stderr,
-	// 		Err: os.Stderr,
-	// 	},
-	// }
 	opts := survey.WithStdio(os.Stdin, os.Stderr, os.Stderr)
 
 	// perform the questions
-	err = survey.Ask(qs, &answers, opts)
-	if err != nil {
+	if err = survey.Ask(databaseSurvey, databaseAnswers, opts); err != nil {
 		logrus.Fatal("No databases on the list")
-		// fmt.Println(err.Error())
-		// return
 	}
-	return answers.DatabaseName, nil
-
+	return databaseAnswers.DatabaseName, nil
 }

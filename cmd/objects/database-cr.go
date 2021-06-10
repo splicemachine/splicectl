@@ -67,7 +67,6 @@ type DatabaseCRList struct {
 
 // ToJSON - Write the output as JSON
 func (cr *DatabaseCR) ToJSON(file string) error {
-
 	crJSON, enverr := json.MarshalIndent(cr, "", "  ")
 	if enverr != nil {
 		logrus.WithError(enverr).Error("Error extracting json")
@@ -81,12 +80,10 @@ func (cr *DatabaseCR) ToJSON(file string) error {
 	}
 
 	return nil
-
 }
 
 // ToGRON - Write output in GRON format
 func (cr *DatabaseCR) ToGRON(file string) error {
-
 	crJSON, enverr := json.MarshalIndent(cr, "", "  ")
 	if enverr != nil {
 		logrus.WithError(enverr).Error("Error extracting json")

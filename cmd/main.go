@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/go-resty/resty/v2"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/splicemachine/splicectl/auth"
@@ -17,24 +18,22 @@ import (
 )
 
 var (
-	semVer        string
-	gitCommit     string
-	buildDate     string
-	gitRef        string
-	VersionDetail objects.Version
-	versionJSON   string
-	cfgFile       string
-	serverURI     string
-)
+	semVer    string
+	gitCommit string
+	buildDate string
+	gitRef    string
+	cfgFile   string
+	serverURI string
 
-// var sessionID string
-// var tokenBearer string
-// var tokenValid bool
-var ApiServer string
-var OutputFormat string
-var FormatOverridden bool
-var NoHeaders bool
-var AuthClient auth.Client
+	VersionDetail objects.Version
+	VersionJSON   string
+
+	ApiServer        string
+	OutputFormat     string
+	FormatOverridden bool
+	NoHeaders        bool
+	AuthClient       auth.Client
+)
 
 // RootCmd represents the base command when called without any subcommands
 // splicectl doesn't have any functionality, other than to validate our auth
@@ -55,21 +54,21 @@ database clusters under Kubernetes easier to manage.`,
 
 		// Collect the version info, for use in determining valid commands based on SemVer
 		if ApiServer != "" {
-			version, err := getVersionInfo()
+			version, err := GetVersionInfo()
 			if err != nil {
 				logrus.WithError(err).Error("Error getting version info")
 			}
 			clientLine := fmt.Sprintf("\"Client\": {\"SemVer\": \"%s\", \"GitCommit\": \"%s\", \"BuildDate\": \"%s\"},", semVer, gitCommit, buildDate)
 			serverLine := fmt.Sprintf("\"Server\": %s},", version)
 			hostLine := fmt.Sprintf("\"Host\": \"%s\"", ApiServer)
-			versionJSON = fmt.Sprintf("{\"VersionInfo\": {\n%s\n%s\n%s\n}", clientLine, serverLine, hostLine)
+			VersionJSON = fmt.Sprintf("{\"VersionInfo\": {\n%s\n%s\n%s\n}", clientLine, serverLine, hostLine)
 		} else {
 			clientLine := fmt.Sprintf("\"Client\": {\"SemVer\": \"%s\", \"GitCommit\": \"%s\", \"BuildDate\": \"%s\"}}", semVer, gitCommit, buildDate)
-			versionJSON = fmt.Sprintf("{\"VersionInfo\": {%s}", clientLine)
+			VersionJSON = fmt.Sprintf("{\"VersionInfo\": {%s}", clientLine)
 		}
-		marsherr := json.Unmarshal([]byte(versionJSON), &VersionDetail)
-		if marsherr != nil {
-			logrus.WithError(marsherr).Error("Error decoding json for Version")
+
+		if err := json.Unmarshal([]byte(VersionJSON), &VersionDetail); err != nil {
+			logrus.WithError(err).Error("Error decoding json for Version")
 		}
 
 		if os.Args[1] != "version" {
@@ -90,12 +89,8 @@ database clusters under Kubernetes easier to manage.`,
 		if OutputFormat != "" {
 			OutputFormat = strings.ToLower(OutputFormat)
 			switch OutputFormat {
-			case "json":
-			case "gron":
-			case "yaml":
-			case "text":
-			case "table":
-			case "raw":
+			case "json", "gron", "yaml", "text", "table", "raw":
+				break
 			default:
 				fmt.Println("Valid options for -o are [json|gron|[text|table]|yaml|raw]")
 				os.Exit(1)
@@ -188,4 +183,91 @@ func createRestrictedConfigFile(fileName string) {
 			}
 		}
 	}
+}
+
+// GetDatabaseList - gets a list of databases
+func GetDatabaseList() (string, error) {
+	uri := "splicectl/v1/splicedb/splicedatabase"
+	resp, resperr := RestyWithHeaders().
+		Execute("LIST", fmt.Sprintf("%s/%s", ApiServer, uri))
+
+	if resperr != nil {
+		logrus.WithError(resperr).Error("Error getting Database List")
+		return "", resperr
+	}
+
+	return string(resp.Body()[:]), nil
+
+}
+
+// GetAccounts - get list of accounts
+func GetAccounts() (string, error) {
+	uri := "splicectl/v1/cm/accounts"
+	resp, resperr := RestyWithHeaders().
+		Get(fmt.Sprintf("%s/%s", ApiServer, uri))
+
+	if resperr != nil {
+		logrus.WithError(resperr).Error("Error getting Account List Info")
+		return "", resperr
+	}
+
+	return string(resp.Body()[:]), nil
+}
+
+// GetVersionInfo - gets version information
+func GetVersionInfo() (string, error) {
+	uri := "splicectl"
+	resp, resperr := RestyWithHeaders().
+		Get(fmt.Sprintf("%s/%s", ApiServer, uri))
+
+	if resperr != nil {
+		logrus.WithError(resperr).Error("Error getting version info")
+		return "", resperr
+	}
+
+	return strings.TrimSuffix(string(resp.Body()[:]), "\n"), nil
+}
+
+// RestyWithHeaders - new resty request with headers for auth and content-type.
+func RestyWithHeaders() *resty.Request {
+	return resty.
+		New().
+		R().
+		SetHeader("Content-Type", "application/json").
+		SetHeader("Accept", "application/json").
+		SetHeader("X-Token-Bearer", AuthClient.GetTokenBearer()).
+		SetHeader("X-Token-Session", AuthClient.GetSessionID())
+}
+
+// Outputable - defines ways that an object may need to present itself
+type Outputable interface {
+	ToJSON() string
+	ToYAML() string
+	ToGRON() string
+	ToText(noHeaders bool) string
+}
+
+func outputData(data Outputable) string {
+	switch strings.ToLower(OutputFormat) {
+	case "json":
+		return data.ToJSON()
+	case "gron":
+		return data.ToGRON()
+	case "yaml":
+		return data.ToYAML()
+	case "text", "table":
+		return data.ToText(NoHeaders)
+	default:
+		return ""
+	}
+}
+
+// OutputData - outputs string representation of data in accordance with
+// OutputFormat.
+func OutputData(data Outputable) {
+	if !FormatOverridden {
+		OutputFormat = "text"
+	}
+
+	fmt.Println(outputData(data))
 }

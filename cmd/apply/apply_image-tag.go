@@ -5,7 +5,6 @@ import (
 	"os"
 
 	"github.com/blang/semver/v4"
-	"github.com/go-resty/resty/v2"
 	"github.com/sirupsen/logrus"
 	c "github.com/splicemachine/splicectl/cmd"
 
@@ -27,14 +26,12 @@ var applyImageTagCmd = &cobra.Command{
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		var dberr error
-		var sv semver.Version
-
-		_, sv = c.VersionDetail.RequirementMet("apply_image-tag")
+		_, sv := c.VersionDetail.RequirementMet("apply_image-tag")
 
 		componentName, _ := cmd.Flags().GetString("component-name")
 		databaseName, _ := cmd.Flags().GetString("database-name")
 		if len(databaseName) == 0 {
-			databaseName, dberr = promptForDatabaseName()
+			databaseName, dberr = c.PromptForDatabaseName()
 			if dberr != nil {
 				logrus.Fatal("Could not get a list of Databases", dberr)
 			}
@@ -62,15 +59,10 @@ func displayApplyImageTagV1(in string) {
 }
 
 func setDatabaseImageTag(componentName string, databaseName string, imageTag string) (string, error) {
-	restClient := resty.New()
 	uri := fmt.Sprintf("splicectl/v1/splicedb/imagetag?component-name=%s&database-name=%s&tag=%s",
 		componentName, databaseName, imageTag)
-	resp, resperr := restClient.R().
-		SetHeader("X-Token-Bearer", authClient.GetTokenBearer()).
-		SetHeader("X-Token-Session", authClient.GetSessionID()).
-		SetResult(&AuthSuccess{}). // or SetResult(AuthSuccess{}).
-		SetError(&AuthError{}).    // or SetError(AuthError{}).
-		Post(fmt.Sprintf("%s/%s", apiServer, uri))
+	resp, resperr := c.RestyWithHeaders().
+		Post(fmt.Sprintf("%s/%s", c.ApiServer, uri))
 
 	if resperr != nil {
 		logrus.WithError(resperr).Error("Error setting TAG for database")
@@ -78,7 +70,6 @@ func setDatabaseImageTag(componentName string, databaseName string, imageTag str
 	}
 
 	return string(resp.Body()[:]), nil
-
 }
 
 func init() {
@@ -89,7 +80,6 @@ func init() {
 	applyImageTagCmd.Flags().StringP("tag", "t", "", "Specify the image tag, ie: master-246")
 
 	applyImageTagCmd.MarkFlagRequired("component-name")
-	// applyImageTagCmd.MarkFlagRequired("database-name")
 	applyImageTagCmd.MarkFlagRequired("tag")
 
 }

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/maahsome/gron"
@@ -27,63 +26,50 @@ type VaultVersion struct {
 }
 
 // ToJSON - Write the output as JSON
-func (vv *VaultVersionList) ToJSON() error {
-
+func (vv *VaultVersionList) ToJSON() string {
 	vvJSON, enverr := json.MarshalIndent(vv, "", "  ")
 	if enverr != nil {
 		logrus.WithError(enverr).Error("Error extracting json")
-		return enverr
+		return ""
 	}
-	fmt.Println(string(vvJSON[:]))
-
-	return nil
-
+	return string(vvJSON)
 }
 
 // ToGRON - Write the output as GRON
-func (vv *VaultVersionList) ToGRON() error {
+func (vv *VaultVersionList) ToGRON() string {
 	vvJSON, enverr := json.MarshalIndent(vv, "", "  ")
 	if enverr != nil {
 		logrus.WithError(enverr).Error("Error extracting json")
-		return enverr
+		return ""
 	}
 
 	subReader := strings.NewReader(string(vvJSON[:]))
 	subValues := &bytes.Buffer{}
 	ges := gron.NewGron(subReader, subValues)
 	ges.SetMonochrome(false)
-	serr := ges.ToGron()
-	if serr != nil {
+	if serr := ges.ToGron(); serr != nil {
 		logrus.Error("Problem generating gron syntax", serr)
-		return serr
+		return ""
 	}
-	fmt.Println(string(subValues.Bytes()))
-
-	return nil
-
+	return string(subValues.Bytes())
 }
 
 // ToYAML - Write the output as YAML
-func (vv *VaultVersionList) ToYAML() error {
-
+func (vv *VaultVersionList) ToYAML() string {
 	vvYAML, enverr := yaml.Marshal(vv)
 	if enverr != nil {
 		logrus.WithError(enverr).Error("Error extracting yaml")
-		return enverr
+		return ""
 	}
-	fmt.Println(string(vvYAML[:]))
-
-	return nil
-
+	return string(vvYAML[:])
 }
 
-// ToTEXT - Write the output as TEXT
-func (vv *VaultVersionList) ToTEXT(noHeaders bool) error {
-
-	var row []string
+// ToText - Write the output as Text
+func (vv *VaultVersionList) ToText(noHeaders bool) string {
+	buf, row := new(bytes.Buffer), make([]string, 0)
 
 	// ******************** TableWriter *******************************
-	table := tablewriter.NewWriter(os.Stdout)
+	table := tablewriter.NewWriter(buf)
 	if !noHeaders {
 		table.SetHeader([]string{"VERSION", "CREATED_AT", "DELETED_AT", "DESTROYED"})
 		table.SetHeaderAlignment(tablewriter.ALIGN_LEFT)
@@ -104,68 +90,55 @@ func (vv *VaultVersionList) ToTEXT(noHeaders bool) error {
 	}
 	table.Render()
 
-	return nil
-
+	return buf.String()
 }
 
 // ToJSON - Write the output as JSON
-func (vv *VaultVersion) ToJSON() error {
-
+func (vv *VaultVersion) ToJSON() string {
 	vvJSON, enverr := json.MarshalIndent(vv, "", "  ")
 	if enverr != nil {
 		logrus.WithError(enverr).Error("Error extracting json")
-		return enverr
+		return ""
 	}
-	fmt.Println(string(vvJSON[:]))
-
-	return nil
+	return string(vvJSON)
 
 }
 
 // ToGRON - Write the output as GRON
-func (vv *VaultVersion) ToGRON() error {
+func (vv *VaultVersion) ToGRON() string {
 	vvJSON, enverr := json.MarshalIndent(vv, "", "  ")
 	if enverr != nil {
 		logrus.WithError(enverr).Error("Error extracting json")
-		return enverr
+		return ""
 	}
 
 	subReader := strings.NewReader(string(vvJSON[:]))
 	subValues := &bytes.Buffer{}
 	ges := gron.NewGron(subReader, subValues)
 	ges.SetMonochrome(false)
-	serr := ges.ToGron()
-	if serr != nil {
+	if serr := ges.ToGron(); serr != nil {
 		logrus.Error("Problem generating gron syntax", serr)
-		return serr
+		return ""
 	}
-	fmt.Println(string(subValues.Bytes()))
-
-	return nil
-
+	return string(subValues.Bytes())
 }
 
 // ToYAML - Write the output as YAML
-func (vv *VaultVersion) ToYAML() error {
-
+func (vv *VaultVersion) ToYAML() string {
 	vvYAML, enverr := yaml.Marshal(vv)
 	if enverr != nil {
 		logrus.WithError(enverr).Error("Error extracting yaml")
-		return enverr
+		return ""
 	}
-	fmt.Println(string(vvYAML[:]))
-
-	return nil
-
+	return string(vvYAML[:])
 }
 
-// ToTEXT - Write the output as TEXT
-func (vv *VaultVersion) ToTEXT(noHeaders bool) error {
-
-	var row []string
+// ToText - Write the output as Text
+func (vv *VaultVersion) ToText(noHeaders bool) string {
+	buf, row := new(bytes.Buffer), make([]string, 0)
 
 	// ******************** TableWriter *******************************
-	table := tablewriter.NewWriter(os.Stdout)
+	table := tablewriter.NewWriter(buf)
 	if !noHeaders {
 		table.SetHeader([]string{"VERSION", "CREATED_AT", "DELETED_AT", "DESTROYED"})
 		table.SetHeaderAlignment(tablewriter.ALIGN_LEFT)
@@ -186,6 +159,5 @@ func (vv *VaultVersion) ToTEXT(noHeaders bool) error {
 
 	table.Render()
 
-	return nil
-
+	return buf.String()
 }

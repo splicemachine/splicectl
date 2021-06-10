@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/blang/semver/v4"
-	"github.com/go-resty/resty/v2"
 	"github.com/sirupsen/logrus"
 	c "github.com/splicemachine/splicectl/cmd"
 	"github.com/splicemachine/splicectl/cmd/objects"
@@ -27,10 +26,7 @@ var applyCMSettingsCmd = &cobra.Command{
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		component, _ := cmd.Flags().GetString("component")
-
-		var sv semver.Version
-
-		_, sv = c.VersionDetail.RequirementMet("apply_cm-settings")
+		_, sv := c.VersionDetail.RequirementMet("apply_cm-settings")
 
 		component = strings.ToLower(component)
 		if len(component) == 0 || !strings.Contains("ui api", component) {
@@ -70,32 +66,13 @@ func displayApplyCmSettingsV1(in string) {
 		logrus.Fatal("Could not unmarshall data", marshErr)
 	}
 
-	if !c.FormatOverridden {
-		c.OutputFormat = "text"
-	}
-
-	switch strings.ToLower(c.OutputFormat) {
-	case "json":
-		vvData.ToJSON()
-	case "gron":
-		vvData.ToGRON()
-	case "yaml":
-		vvData.ToYAML()
-	case "text", "table":
-		vvData.ToTEXT(c.NoHeaders)
-	}
-
+	c.OutputData(&vvData)
 }
 
 func setCMSettings(comp string, in []byte) (string, error) {
-	restClient := resty.New()
 	uri := fmt.Sprintf("splicectl/v1/vault/cmsettings?component=%s", comp)
-	resp, resperr := restClient.R().
-		SetHeader("X-Token-Bearer", c.AuthClient.GetTokenBearer()).
-		SetHeader("X-Token-Session", c.AuthClient.GetSessionID()).
+	resp, resperr := c.RestyWithHeaders().
 		SetBody(in).
-		SetResult(&c.AuthSuccess{}). // or SetResult(AuthSuccess{}).
-		SetError(&c.AuthError{}).    // or SetError(AuthError{}).
 		Post(fmt.Sprintf("%s/%s", c.ApiServer, uri))
 
 	if resperr != nil {
@@ -113,5 +90,4 @@ func init() {
 	applyCMSettingsCmd.Flags().String("file", "", "Specify the input file")
 	applyCMSettingsCmd.Flags().StringP("component", "c", "", "Specify the component, <ui|api>")
 	applyCMSettingsCmd.MarkFlagRequired("file")
-
 }

@@ -22,25 +22,22 @@ type ActionStatus struct {
 }
 
 // ToJSON - Write the output as JSON
-func (as *ActionStatus) ToJSON() error {
+func (as *ActionStatus) ToJSON() string {
 
 	asJSON, enverr := json.MarshalIndent(as, "", "  ")
 	if enverr != nil {
 		logrus.WithError(enverr).Error("Error extracting json")
-		return enverr
+		return ""
 	}
-	fmt.Println(string(asJSON[:]))
-
-	return nil
-
+	return string(asJSON[:])
 }
 
 // ToGRON - Write the output as GRON
-func (as *ActionStatus) ToGRON() error {
+func (as *ActionStatus) ToGRON() string {
 	asJSON, enverr := json.MarshalIndent(as, "", "  ")
 	if enverr != nil {
 		logrus.WithError(enverr).Error("Error extracting json")
-		return enverr
+		return ""
 	}
 
 	subReader := strings.NewReader(string(asJSON[:]))
@@ -50,33 +47,24 @@ func (as *ActionStatus) ToGRON() error {
 	serr := ges.ToGron()
 	if serr != nil {
 		logrus.Error("Problem generating gron syntax", serr)
-		return serr
+		return ""
 	}
-	fmt.Println(string(subValues.Bytes()))
-
-	return nil
-
+	return string(subValues.Bytes())
 }
 
 // ToYAML - Write the output as YAML
-func (as *ActionStatus) ToYAML() error {
-
+func (as *ActionStatus) ToYAML() string {
 	asYAML, enverr := yaml.Marshal(as)
 	if enverr != nil {
 		logrus.WithError(enverr).Error("Error extracting yaml")
-		return enverr
+		return ""
 	}
-	fmt.Println(string(asYAML[:]))
-
-	return nil
-
+	return string(asYAML[:])
 }
 
-// ToTEXT - Write the output as TEXT
-func (as *ActionStatus) ToTEXT(noHeaders bool) error {
-
-	var row []string
-
+// ToText - Write the output as Text
+func (as *ActionStatus) ToText(noHeaders bool) string {
+	buf, row := new(bytes.Buffer), make([]string, 0)
 	// ******************** TableWriter *******************************
 	table := tablewriter.NewWriter(os.Stdout)
 	if !noHeaders {
@@ -97,6 +85,5 @@ func (as *ActionStatus) ToTEXT(noHeaders bool) error {
 	table.Append(row)
 	table.Render()
 
-	return nil
-
+	return buf.String()
 }
