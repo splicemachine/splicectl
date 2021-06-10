@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"regexp"
 	"strings"
 
 	"github.com/sirupsen/logrus"
@@ -25,6 +26,9 @@ var (
 	versionJSON   string
 	cfgFile       string
 	serverURI     string
+
+	// semVerReg - gets the semVer portion only, cutting off any other release details
+	semVerReg = regexp.MustCompile(`(v[0-9]+\.[0-9]+\.[0-9]+).*`)
 )
 
 // var sessionID string
@@ -188,4 +192,16 @@ func createRestrictedConfigFile(fileName string) {
 			}
 		}
 	}
+}
+
+// ClientSemVer - returns the full semVer as the first string and the numerical
+// portion as the second string, they may be identical. One example where they
+// would not be is:
+//         semVer: v0.1.1-cacert -> (v0.1.1-cacert, v0.1.1).
+func ClientSemVer() (string, string) {
+	submatches := semVerReg.FindStringSubmatch(semVer)
+	if submatches == nil || len(submatches) < 2 {
+		logrus.Fatalf("the semver in the current build is not valid: %s", semVer)
+	}
+	return submatches[0], submatches[1]
 }
