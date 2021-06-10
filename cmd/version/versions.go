@@ -1,4 +1,4 @@
-package cmd
+package version
 
 import (
 	"github.com/spf13/cobra"

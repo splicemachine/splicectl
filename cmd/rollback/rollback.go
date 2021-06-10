@@ -1,4 +1,4 @@
-package cmd
+package rollback
 
 import (
 	"github.com/spf13/cobra"

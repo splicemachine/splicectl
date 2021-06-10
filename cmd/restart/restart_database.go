@@ -1,4 +1,4 @@
-package cmd
+package restart
 
 import (
 	"encoding/json"

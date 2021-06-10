@@ -1,4 +1,4 @@
-package cmd
+package restart
 
 import (
 	"github.com/spf13/cobra"
