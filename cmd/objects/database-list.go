@@ -58,6 +58,42 @@ type CMUser struct {
 	Email     string `json:"email"`
 }
 
+const (
+	active = "active"
+	paused = "paused"
+)
+
+// Active - returns whether the cluster described is active or not
+func (cmci CMClusterInfo) Active() bool {
+	return strings.ToLower(cmci.Status) == active
+}
+
+// GroupBy - filters the list on a given test
+func (dbl *DatabaseList) GroupBy(test func(CMClusterInfo) bool) *DatabaseList {
+	newDbl := make([]CMClusterInfo, 0)
+	for _, clusterInfo := range dbl.Clusters {
+		if test(clusterInfo) {
+			newDbl = append(newDbl, clusterInfo)
+		}
+	}
+	return &DatabaseList{Clusters: newDbl}
+}
+
+// FilterByStatus - filters the list based on status of active/paused.
+func (dbl *DatabaseList) FilterByStatus(active, paused bool) *DatabaseList {
+	if active && paused {
+		activel := dbl.GroupBy(func(cmci CMClusterInfo) bool { return cmci.Active() })
+		pausedl := dbl.GroupBy(func(cmci CMClusterInfo) bool { return !cmci.Active() })
+		return &DatabaseList{Clusters: append(activel.Clusters, pausedl.Clusters...)}
+	} else if active {
+		return dbl.GroupBy(func(cmci CMClusterInfo) bool { return cmci.Active() })
+	} else if paused {
+		return dbl.GroupBy(func(cmci CMClusterInfo) bool { return !cmci.Active() })
+	} else { // both false, return all in initial order
+		return dbl
+	}
+}
+
 // ToJSON - Write the output as JSON
 func (databaseList *DatabaseList) ToJSON() error {
 
