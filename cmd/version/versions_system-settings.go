@@ -10,7 +10,6 @@ import (
 	"github.com/splicemachine/splicectl/common"
 
 	"github.com/spf13/cobra"
-	c "github.com/splicemachine/splicectl/cmd"
 )
 
 var versionsSystemSettingsCmd = &cobra.Command{

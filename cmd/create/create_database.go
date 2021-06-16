@@ -14,7 +14,6 @@ import (
 	"github.com/splicemachine/splicectl/common"
 
 	"github.com/spf13/cobra"
-	c "github.com/splicemachine/splicectl/cmd"
 )
 
 var createDatabaseCmd = &cobra.Command{
@@ -200,19 +199,22 @@ func populateRequest(cmd *cobra.Command, req *objects.DatabaseRequest, fileData 
 	}
 }
 
-func generateSkel(dbReq *objects.DatabaseRequest) {
+func dbReqToString(dbReq *objects.DatabaseRequest) string {
+	switch strings.ToLower(c.OutputFormat) {
+	case "json", "gron":
+		return dbReq.ToJSON()
+	case "yaml", "text", "table":
+		return dbReq.ToYAML()
+	default:
+		return dbReq.ToYAML()
+	}
+}
 
+func generateSkel(dbReq *objects.DatabaseRequest) {
 	if !c.FormatOverridden {
 		c.OutputFormat = "yaml"
 	}
-
-	switch strings.ToLower(c.OutputFormat) {
-	case "json", "gron":
-		dbReq.ToJSON()
-	case "yaml", "text", "table":
-		dbReq.ToYAML()
-	}
-
+	fmt.Println(dbReqToString(dbReq))
 }
 func createSpliceDatabase(dbReq *objects.DatabaseRequest, outputonly bool) (string, error) {
 	uri := "splicectl/v1/splicedb/splicedatabase"

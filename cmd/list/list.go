@@ -2,7 +2,7 @@ package list
 
 import (
 	"github.com/spf13/cobra"
-	c "github.com/splicemachine/splicectl/cmd"
+	"github.com/splicemachine/splicectl/cmd/config"
 )
 
 var listCmd = &cobra.Command{
@@ -14,6 +14,9 @@ var listCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {},
 }
 
-func init() {
-	c.RootCmd.AddCommand(listCmd)
+var c *config.Config
+
+func InitSubCommands(conf *config.Config) *cobra.Command {
+	c = conf
+	return listCmd
 }

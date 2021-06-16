@@ -10,7 +10,6 @@ import (
 	"github.com/splicemachine/splicectl/common"
 
 	"github.com/spf13/cobra"
-	c "github.com/splicemachine/splicectl/cmd"
 )
 
 var versionsCMSettingsCmd = &cobra.Command{
@@ -74,5 +73,4 @@ func getCMSettingsVersions(comp string) (string, error) {
 func init() {
 	versionsCmd.AddCommand(versionsCMSettingsCmd)
 	versionsCMSettingsCmd.Flags().StringP("component", "c", "", "Specify the component, <ui|api>")
-
 }

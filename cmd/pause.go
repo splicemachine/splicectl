@@ -29,7 +29,7 @@ var pauseCmd = &cobra.Command{
 	option was chosen if more than one were supplied.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		var dberr error
-		_, sv := VersionDetail.RequirementMet("pause")
+		_, sv := c.VersionDetail.RequirementMet("pause")
 
 		message, _ := cmd.Flags().GetString("message")
 		databaseName := common.DatabaseName(cmd)
@@ -65,7 +65,7 @@ func displayPauseDatabaseV1(in string) {
 }
 
 func isDatabaseActive(db string) bool {
-	dbJSON, err := GetDatabaseList()
+	dbJSON, err := c.GetDatabaseList()
 	if err != nil {
 		logrus.WithError(err).Fatal("Error retreiving ClusterId list")
 	}
@@ -94,9 +94,10 @@ func pauseDatabase(db string, msg string) (string, error) {
 	var resperr error
 
 	reqJSON := fmt.Sprintf("{ \"appId\": \"%s\", \"message\": \"%s\" }", db, msg)
-	resp, resperr = RestyWithHeaders().
+	resp, resperr = c.
+		RestyWithHeaders().
 		SetBody(reqJSON).
-		Post(fmt.Sprintf("%s/%s", ApiServer, uri))
+		Post(fmt.Sprintf("%s/%s", c.ApiServer, uri))
 	if resperr != nil {
 		logrus.WithError(resperr).Error("Error getting Default CR Info")
 		return "", resperr

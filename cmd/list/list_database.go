@@ -11,7 +11,6 @@ import (
 	"github.com/splicemachine/splicectl/cmd/objects"
 
 	"github.com/spf13/cobra"
-	c "github.com/splicemachine/splicectl/cmd"
 )
 
 var listDatabaseCmd = &cobra.Command{

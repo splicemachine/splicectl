@@ -9,7 +9,6 @@ import (
 	"github.com/blang/semver/v4"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	c "github.com/splicemachine/splicectl/cmd"
 	"github.com/splicemachine/splicectl/cmd/objects"
 )
 
@@ -53,6 +52,21 @@ func displayGetSystemSettingsV1(in string) {
 	os.Exit(0)
 }
 
+func systemSettingsToString(sessData objects.SystemSettings, dc bool) string {
+	switch strings.ToLower(c.OutputFormat) {
+	case "json":
+		return sessData.ToJSON()
+	case "gron":
+		return sessData.ToGRON()
+	case "yaml":
+		return sessData.ToYAML()
+	case "text", "table":
+		return sessData.ToText(c.NoHeaders, dc)
+	default:
+		return sessData.ToText(c.NoHeaders, dc)
+	}
+}
+
 func displayGetSystemSettingsV2(in string, dc bool) {
 	if strings.ToLower(c.OutputFormat) == "raw" {
 		fmt.Println(in)
@@ -67,18 +81,7 @@ func displayGetSystemSettingsV2(in string, dc bool) {
 	if !c.FormatOverridden {
 		c.OutputFormat = "yaml"
 	}
-
-	switch strings.ToLower(c.OutputFormat) {
-	case "json":
-		sessData.ToJSON()
-	case "gron":
-		sessData.ToGRON()
-	case "yaml":
-		sessData.ToYAML()
-	case "text", "table":
-		sessData.ToText(c.NoHeaders, dc)
-	}
-
+	fmt.Println(systemSettingsToString(sessData, dc))
 }
 
 func getSystemSettings(ver int) (string, error) {

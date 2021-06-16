@@ -10,7 +10,6 @@ import (
 	"github.com/blang/semver/v4"
 	"github.com/maahsome/gron"
 	"github.com/sirupsen/logrus"
-	c "github.com/splicemachine/splicectl/cmd"
 	"gopkg.in/yaml.v2"
 
 	"github.com/spf13/cobra"

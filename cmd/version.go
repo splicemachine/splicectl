@@ -1,12 +1,10 @@
-package version
+package cmd
 
 import (
 	"fmt"
 	"strings"
 
 	"github.com/spf13/cobra"
-
-	c "github.com/splicemachine/splicectl/cmd"
 )
 
 var versionCmd = &cobra.Command{
@@ -26,15 +24,15 @@ var versionCmd = &cobra.Command{
 			// We want to print the JSON in a condensed format
 			fmt.Println(c.VersionJSON)
 		case "gron":
-			c.VersionDetail.ToGRON()
+			fmt.Println(c.VersionDetail.ToGRON())
 		case "yaml":
-			c.VersionDetail.ToYAML()
+			fmt.Println(c.VersionDetail.ToYAML())
 		case "text", "table":
-			c.VersionDetail.ToTEXT(c.NoHeaders)
+			fmt.Println(c.VersionDetail.ToTEXT(c.NoHeaders))
 		}
 	},
 }
 
 func init() {
-	c.RootCmd.AddCommand(versionCmd)
+	RootCmd.AddCommand(versionCmd)
 }

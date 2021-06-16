@@ -56,7 +56,7 @@ func PromptForCSP() (string, error) {
 
 // PromptForAccountID - prompt the user on the command line for account id
 func PromptForAccountID() (string, error) {
-	out, err := GetAccounts()
+	out, err := c.GetAccounts()
 	if err != nil {
 		logrus.WithError(err).Error("Error getting Default CR Info")
 		return "", err
@@ -96,7 +96,7 @@ func PromptForAccountID() (string, error) {
 
 // PromptForDatabaseName - prompt the user on the command line for name
 func PromptForDatabaseName() (string, error) {
-	out, err := GetDatabaseList()
+	out, err := c.GetDatabaseList()
 	if err != nil {
 		logrus.WithError(err).Error("Error getting Database List")
 		return "", err
@@ -130,4 +130,10 @@ func PromptForDatabaseName() (string, error) {
 		logrus.Fatal("No databases on the list")
 	}
 	return databaseAnswers.DatabaseName, nil
+}
+
+func addTUIFunctionsToConfig() {
+	c.PromptForCSP = PromptForCSP
+	c.PromptForAccountID = PromptForAccountID
+	c.PromptForDatabaseName = PromptForDatabaseName
 }

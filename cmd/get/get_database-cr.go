@@ -8,7 +8,6 @@ import (
 
 	"github.com/blang/semver/v4"
 	"github.com/sirupsen/logrus"
-	c "github.com/splicemachine/splicectl/cmd"
 	"github.com/splicemachine/splicectl/cmd/objects"
 	"github.com/splicemachine/splicectl/common"
 
@@ -74,6 +73,20 @@ func displayGetDatabaseV1(in string, fp string) {
 	}
 	os.Exit(0)
 }
+
+func dbCRToString(dbCR objects.DatabaseCR, fp string) {
+	switch strings.ToLower(c.OutputFormat) {
+	case "json":
+		dbCR.ToJSON(fp)
+	case "gron":
+		dbCR.ToGRON(fp)
+	case "yaml":
+		dbCR.ToYAML(fp)
+	case "text", "table":
+		dbCR.ToTEXT(c.NoHeaders)
+	}
+}
+
 func displayGetDatabaseV2(in string, fp string) {
 	if strings.ToLower(c.OutputFormat) == "raw" {
 		fmt.Println(in)
@@ -89,17 +102,7 @@ func displayGetDatabaseV2(in string, fp string) {
 		c.OutputFormat = "yaml"
 	}
 
-	switch strings.ToLower(c.OutputFormat) {
-	case "json":
-		dbCR.ToJSON(fp)
-	case "gron":
-		dbCR.ToGRON(fp)
-	case "yaml":
-		dbCR.ToYAML(fp)
-	case "text", "table":
-		dbCR.ToTEXT(c.NoHeaders)
-	}
-
+	dbCRToString(dbCR, fp)
 }
 
 func getDatabaseCR(dbname string, ver int) (string, error) {

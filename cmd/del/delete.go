@@ -1,4 +1,4 @@
-package delete
+package del
 
 import (
 	"encoding/json"
@@ -8,7 +8,7 @@ import (
 	"github.com/blang/semver/v4"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	c "github.com/splicemachine/splicectl/cmd"
+	"github.com/splicemachine/splicectl/cmd/config"
 	"github.com/splicemachine/splicectl/cmd/objects"
 	"github.com/splicemachine/splicectl/common"
 )
@@ -104,9 +104,14 @@ func deleteDatabase(cid string) (string, error) {
 
 }
 
-func init() {
-	c.RootCmd.AddCommand(deleteCmd)
+var c *config.Config
 
+func InitSubCommands(conf *config.Config) *cobra.Command {
+	c = conf
+	return deleteCmd
+}
+
+func init() {
 	// add database name and aliases
 	deleteCmd.Flags().StringP("database-name", "d", "", "Specify the database name")
 	deleteCmd.Flags().String("database", "", "Alias for database-name, prefer the use of -d and --database-name.")

@@ -9,7 +9,6 @@ import (
 	"github.com/blang/semver/v4"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	c "github.com/splicemachine/splicectl/cmd"
 	"github.com/splicemachine/splicectl/cmd/objects"
 )
 
@@ -43,6 +42,21 @@ var getCMSettingsCmd = &cobra.Command{
 	},
 }
 
+func sessDataToString(sessData objects.CMSettings) string {
+	switch strings.ToLower(c.OutputFormat) {
+	case "json":
+		return sessData.ToJSON()
+	case "gron":
+		return sessData.ToGRON()
+	case "yaml":
+		return sessData.ToYAML()
+	case "text", "table":
+		return sessData.ToText(c.NoHeaders)
+	default:
+		return sessData.ToText(c.NoHeaders)
+	}
+}
+
 func displayGetCmSettingsV1(in string) {
 	if strings.ToLower(c.OutputFormat) == "raw" {
 		fmt.Println(in)
@@ -59,17 +73,7 @@ func displayGetCmSettingsV1(in string) {
 		c.OutputFormat = "yaml"
 	}
 
-	switch strings.ToLower(c.OutputFormat) {
-	case "json":
-		sessData.ToJSON()
-	case "gron":
-		sessData.ToGRON()
-	case "yaml":
-		sessData.ToYAML()
-	case "text", "table":
-		sessData.ToText(c.NoHeaders)
-	}
-
+	fmt.Println(sessDataToString(sessData))
 }
 
 func getCMSettings(comp string, ver int) (string, error) {

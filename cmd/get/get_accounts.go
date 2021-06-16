@@ -9,7 +9,6 @@ import (
 	"github.com/blang/semver/v4"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	c "github.com/splicemachine/splicectl/cmd"
 	"github.com/splicemachine/splicectl/cmd/objects"
 )
 
