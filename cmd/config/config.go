@@ -36,7 +36,7 @@ type (
 )
 
 // GetDatabaseList - gets a list of databases
-func (c *Config) GetDatabaseList() (string, error) {
+func (c *Config) GetDatabaseList() ([]byte, error) {
 	uri := "splicectl/v1/splicedb/splicedatabase"
 	resp, resperr := c.
 		RestyWithHeaders().
@@ -44,10 +44,10 @@ func (c *Config) GetDatabaseList() (string, error) {
 
 	if resperr != nil {
 		logrus.WithError(resperr).Error("Error getting Database List")
-		return "", resperr
+		return []byte{}, resperr
 	}
 
-	return string(resp.Body()[:]), nil
+	return resp.Body()[:], nil
 
 }
 

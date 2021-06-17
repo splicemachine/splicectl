@@ -23,8 +23,19 @@ var listDatabaseCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		_, sv := c.VersionDetail.RequirementMet("list_database")
 
+		// check active and paused flag values
+		active, err := cmd.Flags().GetBool("active")
+		if err != nil {
+			logrus.WithError(err).Error("Error getting Database CR Info")
+		}
+
+		paused, err := cmd.Flags().GetBool("paused")
+		if err != nil {
+			logrus.WithError(err).Error("Error getting Database CR Info")
+		}
+
 		// databaseName, _ := cmd.Flags().GetString("database-name")
-		out, err := c.GetDatabaseList()
+		out, err := getDatabaseListWithFlags(active, paused)
 		if err != nil {
 			logrus.WithError(err).Error("Error getting Database CR Info")
 		}
@@ -65,11 +76,38 @@ func displayListDatabaseV2(in string) {
 	}
 
 	c.OutputData(&dbList)
+
+}
+
+// getDatabaseList - simple wrapper around getDatabaseListWithFlags to prevent
+// cascading issues with change in API.
+func getDatabaseList() (string, error) {
+	return getDatabaseListWithFlags(false, false)
+}
+
+// getDatabaseListWithFlags - gets list of databases and filters/orders them
+// based on flags.
+func getDatabaseListWithFlags(active, paused bool) (string, error) {
+	data, err := c.GetDatabaseList()
+	if err != nil {
+		return "", err
+	}
+
+	// filter and order DBList returned from api call
+	rawRespBody, dbList := data, &objects.DatabaseList{}
+	if err := json.Unmarshal(rawRespBody, dbList); err != nil {
+		return "", err
+	}
+	dbList = dbList.FilterByStatus(active, paused)
+	filteredDBList, err := json.Marshal(dbList)
+	// TODO: return either bytes or json, do not go back to strings
+	return string(filteredDBList), err
+
 }
 
 func init() {
 	listCmd.AddCommand(listDatabaseCmd)
 
-	// getDatabaseCRCmd.Flags().String("database-name", "", "Specify the database name")
-
+	listDatabaseCmd.Flags().BoolP("active", "a", false, "Select if you want to get active databases.")
+	listDatabaseCmd.Flags().BoolP("paused", "p", false, "Select if you want to get paused databases.")
 }

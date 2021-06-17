@@ -2,6 +2,7 @@ package apply
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -13,6 +14,44 @@ import (
 	"github.com/splicemachine/splicectl/cmd/objects"
 	"github.com/splicemachine/splicectl/common"
 )
+
+const dataKey = "data"
+
+var (
+	noTopLevelDataError   = errors.New("Default CR did not contain top level 'data' element that is required")
+	dataIsWrongTypeError  = errors.New("data element in Default CR is not an object, but should be")
+	doubleNestedDataError = errors.New("Default CR appears to contain a second level 'data' element, your Default CR appears to be double nested")
+)
+
+// validateDefaultCR - validate that the data representing default-cr contains a top
+// level field named 'data'.
+func validateDefaultCR(defaultCR []byte) (interface{}, error) {
+	// get map representation of Default CR
+	crMap := make(map[string]interface{})
+	if err := json.Unmarshal(defaultCR, &crMap); err != nil {
+		return nil, err
+	}
+
+	// get the data element of the Default CR
+	crData, ok := crMap[dataKey]
+	if !ok {
+		return crMap, noTopLevelDataError
+	}
+
+	// verify that the data element is a map
+	crDataMap, ok := crData.(map[string]interface{})
+	if !ok {
+		return crMap, dataIsWrongTypeError
+	}
+
+	// verify that there is not a data element in the top level data element,
+	// would imply double nesting of Default CR
+	if _, ok := crDataMap[dataKey]; ok {
+		return crData, doubleNestedDataError
+	}
+
+	return crMap, nil
+}
 
 var applyDefaultCRCmd = &cobra.Command{
 	Use:   "default-cr",
@@ -31,6 +70,9 @@ var applyDefaultCRCmd = &cobra.Command{
 		jsonBytes, cerr := common.WantJSON(fileBytes)
 		if cerr != nil {
 			logrus.Fatal("The input data MUST be in either JSON or YAML format")
+		}
+		if _, err := validateDefaultCR(jsonBytes); err != nil {
+			logrus.WithError(err).Fatal("Error validating Default CR")
 		}
 
 		out, err := setDefaultCR(jsonBytes)
