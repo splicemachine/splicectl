@@ -8,18 +8,19 @@ import (
 var copyCmd = &cobra.Command{
 	Use:   "copy",
 	Args:  cobra.ExactArgs(2),
-	Short: "TODO: Write description",
+	Short: "Sets up an override of a resource by copying the default resource to its override location.",
 	Long: `EXAMPLES
-	TODO: Make examples
+	# sets up the override of splicedb-hbase-config with default values for fairscheduler.xml
+	splicectl override copy splicedb-hbase-config fairscheduler.xml
 	`,
 	Run: func(cmd *cobra.Command, args []string) {
-		// TODO: Check that version requirement is met
+		_, _ = c.VersionDetail.RequirementMet("override_copy")
 		// TODO: Add and an --all/-a flag that will do the whole thing
-		out, err := copy(args[0], args[1], false)
+		err := copy(args[0], args[1], false)
 		if err != nil {
-			logrus.WithError(err).Error("could perform copy due to error")
+			logrus.WithError(err).Error("could not perform copy due to error")
 		} else {
-			logrus.Info(out)
+			logrus.Infof("Copy completed successfully for component/resource: %s/%s.", args[0], args[1])
 		}
 	},
 }
@@ -30,20 +31,23 @@ func init() {
 
 // copy - performs the override setup by copying the default configuration into
 // override location for the requested component and resource.
-func copy(comp, rsrc string, all bool) (string, error) {
-	_, _ = c.VersionDetail.RequirementMet("override_copy")
+func copy(comp, rsrc string, all bool) error {
 	component, err := GetComponent(comp)
 	if err != nil {
-		return "", err
+		return err
 	}
 	resource, err := component.GetDefaultResource(rsrc)
 	if err != nil {
-		return "", err
+		return err
+	}
+	rm, ok := resource.(map[string]interface{})
+	if !ok {
+		return nil
 	}
 	// TODO: make changes to resource, update name and labels etc.
-	_ = resource
-	if err := component.PutOverrideResource(rsrc, resource); err != nil {
-		return "", err
+	_ = rm
+	if err := component.PutOverrideResource(rsrc, rsrc); err != nil {
+		return err
 	}
-	return "all clear", nil
+	return nil
 }
