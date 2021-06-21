@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -76,6 +78,15 @@ func displayGetAccountsV1(in string) {
 
 func getAccounts() (string, error) {
 	restClient := resty.New()
+	// Check if we've set a caBundle (via --ca-cert parameter)
+	if len(caBundle) > 0 {
+		roots := x509.NewCertPool()
+		ok := roots.AppendCertsFromPEM([]byte(caBundle))
+		if !ok {
+			logrus.Info("Failed to parse CABundle")
+		}
+		restClient.SetTLSClientConfig(&tls.Config{RootCAs: roots})
+	}
 
 	uri := "splicectl/v1/cm/accounts"
 	resp, resperr := restClient.R().

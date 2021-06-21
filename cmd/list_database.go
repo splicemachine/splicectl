@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -106,6 +108,15 @@ func getDatabaseList() (string, error) {
 // based on flags.
 func getDatabaseListWithFlags(active, paused bool) (string, error) {
 	restClient := resty.New()
+	// Check if we've set a caBundle (via --ca-cert parameter)
+	if len(caBundle) > 0 {
+		roots := x509.NewCertPool()
+		ok := roots.AppendCertsFromPEM([]byte(caBundle))
+		if !ok {
+			logrus.Info("Failed to parse CABundle")
+		}
+		restClient.SetTLSClientConfig(&tls.Config{RootCAs: roots})
+	}
 
 	uri := "splicectl/v1/splicedb/splicedatabase"
 	resp, resperr := restClient.R().
