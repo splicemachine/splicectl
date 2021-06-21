@@ -12,17 +12,25 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/splicemachine/splicectl/cmd/objects"
+	"github.com/splicemachine/splicectl/common"
 )
 
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
 	Args:  cobra.MinimumNArgs(0),
-	Short: "Delete Cluster Databases",
+	Short: "Delete Cluster workspaces",
 	Long: `EXAMPLES
-	splicectl list databases
+	splicectl list workspace
 	splicectl delete --database-name <database> --delete
 
-	  * The '--delete' is required as a validation for the deletion request`,
+	* The '--delete' is required as a validation for the deletion request
+	  
+	Note: --database-name and -d are the preferred way to supply the database name.
+	However, --database and --workspace can also be used as well. In the event that
+	more than one of them is supplied database-name and d are preferred over all
+	and workspace is preferred over database. The most preferred option that is
+	supplied will be used and a message will be displayed letting you know which
+	option was chosen if more than one were supplied. `,
 	Run: func(cmd *cobra.Command, args []string) {
 		var dberr error
 		var sv semver.Version
@@ -30,11 +38,11 @@ var deleteCmd = &cobra.Command{
 		_, sv = versionDetail.RequirementMet("delete")
 
 		verifyDelete, _ := cmd.Flags().GetBool("delete")
-		databaseName, _ := cmd.Flags().GetString("database-name")
+		databaseName := common.DatabaseName(cmd)
 		if len(databaseName) == 0 {
 			databaseName, dberr = promptForDatabaseName()
 			if dberr != nil {
-				logrus.Fatal("Could not get a list of Databases", dberr)
+				logrus.Fatal("Could not get a list of workspaces", dberr)
 			}
 		}
 		if verifyDelete {
@@ -42,7 +50,7 @@ var deleteCmd = &cobra.Command{
 			if len(clusterID) > 0 {
 				out, err := deleteDatabase(clusterID)
 				if err != nil {
-					logrus.Warn("Deleting database failed.")
+					logrus.Warn("Deleting workspace failed.")
 				}
 				if semverV1, err := semver.ParseRange(">=0.1.7"); err != nil {
 					logrus.Fatal("Failed to parse SemVer")
@@ -52,7 +60,7 @@ var deleteCmd = &cobra.Command{
 					}
 				}
 			} else {
-				logrus.Fatal("Unable to determine ClusterId from Database Name")
+				logrus.Fatal("Unable to determine ClusterId from workspace Name")
 			}
 		} else {
 			logrus.Fatal("You MUST specify --delete on the commandline to validate the deletion")
@@ -74,7 +82,7 @@ func getMatchingClusterID(db string) string {
 
 	marshErr := json.Unmarshal([]byte(dbJSON), &dbList)
 	if marshErr != nil {
-		logrus.Fatal("Could not unmarshall database list for ClusterId", marshErr)
+		logrus.Fatal("Could not unmarshall workspace list for ClusterId", marshErr)
 	}
 
 	for _, v := range dbList.Clusters {
@@ -120,6 +128,11 @@ func deleteDatabase(cid string) (string, error) {
 
 func init() {
 	rootCmd.AddCommand(deleteCmd)
-	deleteCmd.Flags().StringP("database-name", "d", "", "Specify the Splice Machine Database to Pause")
+
+	// add database name and aliases
+	deleteCmd.Flags().StringP("database-name", "d", "", "Specify the database name")
+	deleteCmd.Flags().String("database", "", "Alias for database-name, prefer the use of -d and --database-name.")
+	deleteCmd.Flags().String("workspace", "", "Alias for database-name, prefer the use of -d and --database-name.")
+
 	deleteCmd.Flags().Bool("delete", false, "Verification parameter to perform the deletion")
 }

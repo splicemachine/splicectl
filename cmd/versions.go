@@ -11,7 +11,7 @@ var versionsCmd = &cobra.Command{
 	Long: `EXAMPLES
 	splicectl versions system-settings
 	splicectl versions default-cr
-	splicectl list database
+	splicectl list workspace
 	splicectl versions database-cr --database-name splicedb
 	`,
 	Run: func(cmd *cobra.Command, args []string) {},

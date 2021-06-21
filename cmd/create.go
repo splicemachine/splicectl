@@ -9,7 +9,7 @@ var createCmd = &cobra.Command{
 	Args:  cobra.MinimumNArgs(1),
 	Short: "Create cluster resources",
 	Long: `EXAMPLES
-	splicectl create splice-database --database-name splicedb --dnsprefix splicedb`,
+	splicectl create workspace --database-name splicedb --dnsprefix splicedb`,
 	Run: func(cmd *cobra.Command, args []string) {},
 }
 

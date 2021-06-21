@@ -9,7 +9,7 @@ var restartCmd = &cobra.Command{
 	Args:  cobra.MinimumNArgs(1),
 	Short: "Restart components of the Splice DB Cluster",
 	Long: `EXAMPLES
-	splicectl restart database --database-name <dbname>`,
+	splicectl restart workspace --database-name <dbname>`,
 	Run: func(cmd *cobra.Command, args []string) {},
 }
 
