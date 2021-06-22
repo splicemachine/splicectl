@@ -1,0 +1,51 @@
+name: Create Red Hat / CentOS Linux Release
+
+on:
+  release:
+    types:
+      - created
+
+jobs:
+  release:
+    container:
+      image: archlinux
+      options: --privileged
+      volumes:
+        - /sys/fs/cgroup:/sys/fs/cgroup
+    steps:
+      - 
+        name: Checkout
+        uses: actions/checkout@v2
+      -
+        name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.16
+      - 
+        name: Build Arch Linux package
+        uses: FFY00/build-arch-package@v1
+        with:
+          PKGBUILD: $GITHUB_WORKSPACE/PKGBUILD
+      -
+        name: Upload to S3
+        uses: shallwefootball/s3-upload-action@master
+        with:
+          aws_key_id: ${{ secrets.AWS_KEY_ID }}
+          aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY}}
+          aws_bucket: s3://splice-releases/splicectl/aur/
+          source_dir: $HOME/arch-packages
+  test:
+    needs: release
+    container:
+      image: archlinux
+      options: --privileged
+      volumes:
+        - /sys/fs/cgroup:/sys/fs/cgroup
+    steps:
+      -
+        name: Add Repo to pacman, install and test splicectl
+        run: |
+          echo -e "[splice]\nSigLevel = Optional TrustAll\nServer = https://splice-releases.s3.amazonaws.com/splicectl/aur/" >> /etc/pacman.conf
+          sudo pacman -Sy splicectl
+          echo RELEASE_TAG=$(echo ${GITHUB_REF} | rev | cut -d'/' -f 1 | rev ) >> ${GITHUB_ENV}
+          splicectl version | grep ${{ env.RELEASE_TAG }}
