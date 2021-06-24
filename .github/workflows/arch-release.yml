@@ -32,7 +32,7 @@ jobs:
         with:
           aws_key_id: ${{ secrets.AWS_KEY_ID }}
           aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY}}
-          aws_bucket: 427-assignment1
+          aws_bucket: splice-releases
           source_dir: archl-files
           destination_dir: splicectl/aur/
   test:
