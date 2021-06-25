@@ -1,4 +1,4 @@
-name: Create Arch Linux Release
+name: Create Aur Release
 
 on:
   workflow_dispatch:
