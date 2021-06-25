@@ -23,5 +23,5 @@ md5sums=('SKIP')
 validpgpkeys=()
 
 package() {
-	install -Dm755 "/splice/splicectl" "$pkgdir/usr/bin/splicectl"
+	install -Dm755 "/__w/splicectl/splicectl/splicectl" "$pkgdir/usr/bin/splicectl"
 }
