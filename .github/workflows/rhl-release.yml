@@ -25,7 +25,10 @@ jobs:
           cp ./release-entrypoint.sh ./entrypoint.sh
           docker build -t rhl .
           cd ../../../
-          docker run --privileged=true -v /var/run/docker.sock:/var/run/docker.sock -a stdin -a stdout -a stderr -e RELEASE_VERSION=$RELEASE_VERSION --mount type=bind,source=$(pwd),target=/splice rhl
+          # --privileged=true -v /var/run/docker.sock:/var/run/docker.sock
+          #  docker run -a stdin -a stdout -a stderr -e RELEASE_VERSION=$RELEASE_VERSION --mount type=bind,source=$(pwd),target=/splice rhl
+          docker run -a stdin -a stdout -a stderr -e RELEASE_VERSION=$RELEASE_VERSION -v $(pwd):/splice rhl
+          ls -ltra
       -
         name: Upload to S3
         uses: shallwefootball/s3-upload-action@master
