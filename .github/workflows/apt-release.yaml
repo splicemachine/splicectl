@@ -1,0 +1,66 @@
+name: Create Apt Release
+
+on:
+  workflow_dispatch:
+  release:
+    types:
+      - created
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      -
+        name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Build Package
+        env:
+          KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+        run: |
+          sudo gem install deb-s3
+          # Set release version based on github ref
+          # RELEASE_VERSION=v0.1.2
+          RELEASE_VERSION=$(echo ${GITHUB_REF} | rev | cut -d'/' -f 1 | sed "s/v//" | rev )
+          RELEASE_VERSION_WO_V=$(sed "s/v//" <<< $RELEASE_VERSION)
+          sed -i "s/RELEASE_VERSION/${RELEASE_VERSION_WO_V}/" control
+
+          # Open up permissions on all files so no permissions issues happen
+          sudo chmod 777 -R .
+          curl -L https://github.com/splicemachine/splicectl/releases/download/$RELEASE_VERSION/splicectl_linux_amd64.tar.gz | tar -xz -C .
+          cp ./splicectl_linux_amd64/splicectl ./splicectl
+
+          # Add key from secrets, will be used for signing
+          echo "$KEY" | gpg --import
+
+          # Create debian folder
+          mv splicectl splicectl.tmp
+          mkdir -p splicectl/usr/bin/
+          mkdir -p splicectl/DEBIAN/	
+          cp control splicectl/DEBIAN/control
+          mv splicectl.tmp splicectl/usr/bin/splicectl
+          dpkg-deb --build splicectl
+          deb-s3 upload --sign 33B0C2B471663015 --bucket splice-releases --prefix splicectl/apt --codename bionic --preserve-versions --arch amd64 splicectl.deb --access-key-id ${{ secrets.AWS_KEY_ID }} --secret-access-key ${{ secrets.AWS_SECRET_ACCESS_KEY}}
+  test:
+    runs-on: ubuntu-latest
+    needs: release
+    steps:
+      - 
+        name: Checkout
+        uses: actions/checkout@v2
+      - 
+        name: Test package
+        run: |
+          # Set release version based on github ref
+          RELEASE_VERSION=v0.1.2
+          # RELEASE_VERSION=$(echo ${GITHUB_REF} | rev | cut -d'/' -f 1 | rev )
+
+          # Get the package and make sure that the version command prints out the correct version that was set during release
+          sudo mkdir -p  /etc/apt/sources.list.d/
+          sudo cp splice.list /etc/apt/sources.list.d/
+          sudo cat splice.gpg.key | sudo apt-key add -
+          sudo chmod 777 -R /etc/apt/sources.list.d
+          sudo apt-get update
+          sudo apt-get install -y splicectl
+          splicectl version | grep ${RELEASE_VERSION}
