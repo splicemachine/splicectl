@@ -52,7 +52,6 @@ func getURLOutput(cmd *cobra.Command) string {
 	} else if prodOnly, _ := cmd.Flags().GetBool("prod"); prodOnly {
 		return generateBuildURLs()
 	} else {
-		fmt.Println(common.DatabaseName(cmd))
 		return generateURLsFromNamespaces(ssNameSpace, common.DatabaseName(cmd))
 	}
 }
@@ -96,7 +95,7 @@ func generateURLsFromNamespaces(namespaces ...string) string {
 			Ingresses(namespace).
 			List(context.TODO(), v1.ListOptions{})
 		if err != nil {
-			logrus.WithError(err).Error("could not list ingresses for splice system")
+			logrus.WithError(err).Errorf("could not list ingresses for %s", namespace)
 			return ""
 		}
 
@@ -119,7 +118,7 @@ func generateURLsFromIngresses(ings *v1beta1.IngressList) []namedURL {
 		}
 
 		// Get the preferred name for the ingress from labels
-		name := preferredName(ing.Labels)
+		name := strings.Title(preferredName(ing))
 
 		for _, rule := range ing.Spec.Rules {
 			host := rule.Host
@@ -136,13 +135,16 @@ func generateURLsFromIngresses(ings *v1beta1.IngressList) []namedURL {
 	return urls
 }
 
-func preferredName(labels map[string]string) string {
-	name, ok := labels[displayNameLabel]
+func preferredName(ing v1beta1.Ingress) string {
+	name, ok := ing.Labels[displayNameLabel]
 	if ok {
 		return name
 	}
-	name = labels[defaultNameLabel]
-	return strings.Title(name)
+	name, ok = ing.Labels[defaultNameLabel]
+	if ok {
+		return name
+	}
+	return ing.Name
 }
 
 func generateOutputFromNamedURLs(urls []namedURL) string {
@@ -155,7 +157,7 @@ func generateOutputFromNamedURLs(urls []namedURL) string {
 	nameLen := -1
 	for _, pair := range urls {
 		if len(pair.name) > nameLen {
-			nameLen = len(pair.url)
+			nameLen = len(pair.name)
 		}
 	}
 
@@ -163,7 +165,7 @@ func generateOutputFromNamedURLs(urls []namedURL) string {
 	sb := strings.Builder{}
 	sb.WriteString("\n")
 	for _, pair := range urls {
-		sb.WriteString(fmt.Sprintf("%s %s\n", pair.name, pair.url))
+		sb.WriteString(fmt.Sprintf("%-*s %s\n", nameLen, pair.name, pair.url))
 	}
 
 	return sb.String()
