@@ -16,7 +16,6 @@ require (
 	github.com/spf13/viper v1.6.3
 	github.com/stretchr/testify v1.4.0
 	gopkg.in/yaml.v2 v2.2.8
-	k8s.io/api v0.18.4
 	k8s.io/apimachinery v0.18.4
 	k8s.io/client-go v0.18.4
 	k8s.io/utils v0.0.0-20200414100711-2df71ebbae66 // indirect
