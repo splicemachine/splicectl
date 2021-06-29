@@ -9,7 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/splicemachine/splicectl/common"
-	"k8s.io/api/networking/v1beta1"
+	netw "k8s.io/api/networking/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -36,6 +36,13 @@ var getUrlsCmd = &cobra.Command{
 
 	# If either --build/-b or --prod/-p are specified only those urls are output.
 	# The build flag take precedence over prod.
+	
+	Note: --database-name and -d are the preferred way to supply the database name.
+	However, --database and --workspace can also be used as well. In the event that
+	more than one of them is supplied database-name and d are preferred over all
+	and workspace is preferred over database. The most preferred option that is
+	supplied will be used and a message will be displayed letting you know which
+	option was chosen if more than one were supplied.
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		if out := getURLOutput(cmd); out != "" {
@@ -52,22 +59,7 @@ func getURLOutput(cmd *cobra.Command) string {
 	} else if prodOnly, _ := cmd.Flags().GetBool("prod"); prodOnly {
 		return generateBuildURLs()
 	} else {
-		dbNamespace := ""
-		if dbName := common.DatabaseName(cmd); dbName != "" {
-			list, err := c.GetDatabaseListStruct()
-			if err != nil {
-				logrus.WithError(err).Error("could not get list of databases")
-			}
-			for _, db := range list.Clusters {
-				if db.Name == dbName {
-					dbNamespace = db.Namespace
-				}
-			}
-			if dbNamespace == "" {
-				logrus.WithError(err).Errorf("no database matched given name: '%s'", dbName)
-			}
-		}
-		return generateURLsFromNamespaces(ssNameSpace, dbNamespace)
+		return generateURLsFromNamespaces(ssNameSpace, common.DatabaseName(cmd))
 	}
 }
 
@@ -106,7 +98,7 @@ func generateURLsFromNamespaces(namespaces ...string) string {
 
 		// Get ingresses
 		ings, err := client.
-			NetworkingV1beta1().
+			NetworkingV1().
 			Ingresses(namespace).
 			List(context.TODO(), v1.ListOptions{})
 		if err != nil {
@@ -122,7 +114,7 @@ func generateURLsFromNamespaces(namespaces ...string) string {
 	return generateOutputFromNamedURLs(urls)
 }
 
-func generateURLsFromIngresses(ings *v1beta1.IngressList) []namedURL {
+func generateURLsFromIngresses(ings *netw.IngressList) []namedURL {
 	urls := make([]namedURL, 0)
 
 	// Iterate through each ingress
@@ -150,7 +142,7 @@ func generateURLsFromIngresses(ings *v1beta1.IngressList) []namedURL {
 	return urls
 }
 
-func preferredName(ing v1beta1.Ingress) string {
+func preferredName(ing netw.Ingress) string {
 	name, ok := ing.Labels[displayNameLabel]
 	if ok {
 		return name
