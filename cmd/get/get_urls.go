@@ -52,7 +52,22 @@ func getURLOutput(cmd *cobra.Command) string {
 	} else if prodOnly, _ := cmd.Flags().GetBool("prod"); prodOnly {
 		return generateBuildURLs()
 	} else {
-		return generateURLsFromNamespaces(ssNameSpace, common.DatabaseName(cmd))
+		dbNamespace := ""
+		if dbName := common.DatabaseName(cmd); dbName != "" {
+			list, err := c.GetDatabaseListStruct()
+			if err != nil {
+				logrus.WithError(err).Error("could not get list of databases")
+			}
+			for _, db := range list.Clusters {
+				if db.Name == dbName {
+					dbNamespace = db.Namespace
+				}
+			}
+			if dbNamespace == "" {
+				logrus.WithError(err).Errorf("no database matched given name: '%s'", dbName)
+			}
+		}
+		return generateURLsFromNamespaces(ssNameSpace, dbNamespace)
 	}
 }
 

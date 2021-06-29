@@ -1,6 +1,7 @@
 package config
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -49,6 +50,22 @@ func (c *Config) GetDatabaseList() ([]byte, error) {
 
 	return resp.Body()[:], nil
 
+}
+
+// GetDatabaseListStruct - gets a list of databases, marshalled into struct
+func (c *Config) GetDatabaseListStruct() (*objects.DatabaseList, error) {
+	data, err := c.GetDatabaseList()
+	if err != nil {
+		return nil, err
+	}
+
+	// filter and order DBList returned from api call
+	rawRespBody, dbList := data, &objects.DatabaseList{}
+	if err := json.Unmarshal(rawRespBody, dbList); err != nil {
+		return nil, err
+	}
+
+	return dbList, nil
 }
 
 // GetAccounts - get list of accounts
