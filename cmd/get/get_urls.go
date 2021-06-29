@@ -36,6 +36,13 @@ var getUrlsCmd = &cobra.Command{
 
 	# If either --build/-b or --prod/-p are specified only those urls are output.
 	# The build flag take precedence over prod.
+	
+	Note: --database-name and -d are the preferred way to supply the database name.
+	However, --database and --workspace can also be used as well. In the event that
+	more than one of them is supplied database-name and d are preferred over all
+	and workspace is preferred over database. The most preferred option that is
+	supplied will be used and a message will be displayed letting you know which
+	option was chosen if more than one were supplied.
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		if out := getURLOutput(cmd); out != "" {

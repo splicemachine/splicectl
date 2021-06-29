@@ -27,6 +27,7 @@ const (
 	selectorFlag  = "selector"
 	directoryFlag = "directory"
 	allFlag       = "all"
+	quietFlag     = "quiet"
 )
 
 var (
@@ -36,16 +37,26 @@ var (
 
 var getLogsCmd = &cobra.Command{
 	Use:   "logs",
-	Short: "Get logs of all pods in the namespace",
+	Short: "Get logs of multiple pods in a workspace",
 	Long: `EXAMPLES
-	splicectl get logs --workspace splicedb
+	splicectl get logs -d splicedb
+
+	Note: --database-name and -d are the preferred way to supply the database name.
+	However, --database and --workspace can also be used as well. In the event that
+	more than one of them is supplied database-name and d are preferred over all
+	and workspace is preferred over database. The most preferred option that is
+	supplied will be used and a message will be displayed letting you know which
+	option was chosen if more than one were supplied.
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		var (
 			selector, _ = cmd.Flags().GetString(selectorFlag)
 			dirName, _  = cmd.Flags().GetString(directoryFlag)
 			all, _      = cmd.Flags().GetBool(allFlag)
+			quiet, _    = cmd.Flags().GetBool(quietFlag)
 		)
+
+		setLogLevel(quiet)
 
 		dbNamespace, err := getDBNamespace(cmd)
 		if err != nil {
@@ -78,6 +89,13 @@ var getLogsCmd = &cobra.Command{
 		}
 		wg.Wait()
 	},
+}
+
+// setLogLevel - if quiet is true, then only errors and above are printed
+func setLogLevel(quiet bool) {
+	if quiet {
+		logrus.SetLevel(logrus.ErrorLevel)
+	}
 }
 
 // allOrDefault - return empty string if selector for all is requested, otherwise return supplied default
@@ -162,13 +180,14 @@ func streamLog(pod core.Pod, dirName string, pi typed.PodInterface) {
 			logrus.WithError(err).Errorf("could not make directory: %s", filName)
 			return
 		}
-		for _, container := range pod.Spec.Containers {
-			innerFilName := path.Join(filName, container.Name+".log")
-			amount = streamContainerLog(innerFilName, pi.GetLogs(pod.Name, podLogOptions(container.Name)))
-		}
-		for _, container := range pod.Spec.InitContainers {
-			innerFilName := path.Join(filName, container.Name+".log")
-			amount += streamContainerLog(innerFilName, pi.GetLogs(pod.Name, podLogOptions(container.Name)))
+		for _, containers := range [][]core.Container{
+			pod.Spec.Containers,
+			pod.Spec.InitContainers,
+		} {
+			for _, container := range containers {
+				innerFilName := path.Join(filName, container.Name+".log")
+				amount += streamContainerLog(innerFilName, pi.GetLogs(pod.Name, podLogOptions(container.Name)))
+			}
 		}
 	}
 	logrus.Infof("wrote %10d bytes to %s", amount, filName)
@@ -203,6 +222,7 @@ func streamContainerLog(filName string, req *rest.Request) int64 {
 
 func init() {
 	getLogsCmd.Flags().BoolP(allFlag, "a", false, "whether to get all logs from all pods with no selector")
+	getLogsCmd.Flags().BoolP(quietFlag, "q", false, "whether to output information about streaming process")
 
 	getLogsCmd.Flags().StringP(selectorFlag, "s", "app=hbase", "kubernetes selector expresssion to filter pods on")
 	getLogsCmd.Flags().StringP(directoryFlag, "f", "", "name of folder to output logs to")
