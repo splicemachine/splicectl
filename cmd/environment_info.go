@@ -56,7 +56,7 @@ func getIngressDetail() string {
 		os.Exit(1)
 	}
 
-	ingressResult, err := client.ExtensionsV1beta1().Ingresses("splice-system").Get(context.TODO(), "splicectl-api", v1.GetOptions{})
+	ingressResult, err := client.NetworkingV1().Ingresses("splice-system").Get(context.TODO(), "splicectl-api", v1.GetOptions{})
 	if err != nil {
 		logrus.WithError(err).Warn("could not read from ingress: splicectl-api")
 		return ""
