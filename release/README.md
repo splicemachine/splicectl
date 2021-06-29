@@ -4,15 +4,15 @@
   - where {newSemVer} is in the form of `v0.1.0`
 - Create a new branch for release.
   - `git checkout -b RELEASE_${RELEASE_VERSION}`
-- Check to see if there are any ./changelog/fragments/*.md files
-  - If there are files other than the template
-    - make changelog  (# from the source root)
-  - If there are no files other than the template
-    - create a ./changelog/releases/${RELEASE_VERSION}.md for the release.
-- Review changelogs/releases/${RELEASE_VERSION}.md
+- Generate the changelog for the version
+  - SET your GitHub Personal Access Token
+    - `GH_PAT=YOUR_ACCESS_TOKEN_HERE`
+    - `PREVIOUS_RELEASE_VER=$(curl -Ls https://api.github.com/repos/splicemachine/splicectl/releases/latest | jq -r '.tag_name'); echo ${PREVIOUS_RELEASE_VER}`
+    - `changelog-pr generate -p . --since-tag "${PREVIOUS_RELEASE_VER}" --release-tag "${RELEASE_VERSION}" -v info --gh-token=${GH_PAT} --file changelog/releases/${RELEASE_VERSION}.md`
+- Review changelog/releases/${RELEASE_VERSION}.md
+  - `mdcat changelog/releases/${RELEASE_VERSION}.md`
 - Create and Merge PR
-  - If there were fragments ensure that they have been deleted and only 00_template.yaml remains.
-    - `git add -A; git commit -m "RELEASE of ${RELEASE_VERSION}"; git push origin RELEASE_${RELEASE_VERSION}`
+  - `git add -A; git commit -m "RELEASE of ${RELEASE_VERSION}"; git push origin RELEASE_${RELEASE_VERSION}`
 - Pull main
   - `git checkout main; git fetch; git pull`
 - Perform the release

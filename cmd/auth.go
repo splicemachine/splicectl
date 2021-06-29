@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"fmt"
 
@@ -63,6 +65,15 @@ var authCmd = &cobra.Command{
 
 func performAuth() (string, error) {
 	restClient := resty.New()
+	// Check if we've set a caBundle (via --ca-cert parameter)
+	if len(c.CABundle) > 0 {
+		roots := x509.NewCertPool()
+		ok := roots.AppendCertsFromPEM([]byte(c.CABundle))
+		if !ok {
+			logrus.Info("Failed to parse CABundle")
+		}
+		restClient.SetTLSClientConfig(&tls.Config{RootCAs: roots})
+	}
 
 	uri := "splicectl/v1/auth"
 	resp, resperr := restClient.R().

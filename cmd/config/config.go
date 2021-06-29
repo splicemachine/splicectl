@@ -1,6 +1,8 @@
 package config
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"fmt"
 	"strings"
 
@@ -15,11 +17,14 @@ type (
 		VersionDetail objects.Version
 		VersionJSON   string
 
+		// Vars that used to live in main
 		ApiServer        string
 		OutputFormat     string
 		FormatOverridden bool
 		NoHeaders        bool
 		AuthClient       auth.Client
+		CACert           string
+		CABundle         string
 
 		// tui functions
 		PromptForCSP          func() (string, error)
@@ -66,10 +71,23 @@ func (c *Config) GetAccounts() (string, error) {
 	return string(resp.Body()[:]), nil
 }
 
+func (c *Config) RestyClientWithCA() *resty.Client {
+	client := resty.New()
+	if len(c.CABundle) > 0 {
+		roots := x509.NewCertPool()
+		ok := roots.AppendCertsFromPEM([]byte(c.CABundle))
+		if !ok {
+			logrus.Info("Failed to parse CABundle")
+		}
+		client.SetTLSClientConfig(&tls.Config{RootCAs: roots})
+	}
+	return client
+}
+
 // GetVersionInfo - gets version information
 func (c *Config) GetVersionInfo() (string, error) {
 	uri := "splicectl"
-	resp, resperr := resty.New().R().
+	resp, resperr := c.RestyClientWithCA().R().
 		SetHeader("Content-Type", "application/json").
 		SetHeader("Accept", "application/json").
 		Get(fmt.Sprintf("%s/%s", c.ApiServer, uri))
@@ -84,9 +102,7 @@ func (c *Config) GetVersionInfo() (string, error) {
 
 // RestyWithHeaders - new resty request with headers for auth and content-type.
 func (c *Config) RestyWithHeaders() *resty.Request {
-	return resty.
-		New().
-		R().
+	return c.RestyClientWithCA().R().
 		SetHeader("Content-Type", "application/json").
 		SetHeader("Accept", "application/json").
 		SetHeader("X-Token-Bearer", c.AuthClient.GetTokenBearer()).

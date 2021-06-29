@@ -1,0 +1,76 @@
+name: Create Aur Release
+
+on:
+  workflow_dispatch:
+  release:
+    types:
+      - created
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    container: archlinux:base-devel
+    steps:
+      -
+        name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      -
+        name: Makepkg
+        run: |
+          # Set release version based on github ref
+          # RELEASE_VERSION=v0.1.2
+          RELEASE_VERSION=$(echo ${GITHUB_REF} | rev | cut -d'/' -f 1 | rev )
+          sed -i "s/RELEASE_VERSION/${RELEASE_VERSION}/" ./PKGBUILD
+
+          # Set up new user to run makepkg (root not allowed)
+          pacman -Sy --needed --noconfirm sudo # Install sudo
+          useradd builduser -m # Create the builduser
+          passwd -d builduser # Delete the buildusers password
+          printf 'builduser ALL=(ALL) ALL\n' | tee -a /etc/sudoers # Allow the builduser passwordless sudo
+
+          # Open up permissions on all files so no permissions issues happen
+          sudo chmod 777 -R .
+          curl -L https://github.com/splicemachine/splicectl/releases/download/$RELEASE_VERSION/splicectl_linux_amd64.tar.gz | tar -xz -C .
+          cp ./splicectl_linux_amd64/splicectl ./splicectl
+          
+          # Perform the build as the builduser instead of root
+          sudo -u builduser bash -c "makepkg -s --noconfirm && repo-add splice.db.tar.gz splicectl-${RELEASE_VERSION}-1-x86_64.pkg.tar.zst"
+
+          # put all files into known folder for easy sync with S3
+          mkdir -p aur-files
+          mv splice.db aur-files/splice.db
+          mv splice.db.tar.gz aur-files/splice.db.tar.gz
+          mv splice.files aur-files/splice.files
+          mv splice.files.tar.gz aur-files/splice.files.tar.gz
+          mv splicectl-${RELEASE_VERSION}-1-x86_64.pkg.tar.zst aur-files/splicectl-${RELEASE_VERSION}-1-x86_64.pkg.tar.zst
+      -
+        name: Upload to S3
+        uses: shallwefootball/s3-upload-action@master
+        with:
+          aws_key_id: ${{ secrets.AWS_KEY_ID }}
+          aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY}}
+          aws_bucket: splice-releases
+          source_dir: aur-files
+          destination_dir: splicectl/aur/
+  test:
+    runs-on: ubuntu-latest
+    container: archlinux:base-devel
+    needs: release
+    steps:
+      - 
+        name: Checkout
+        uses: actions/checkout@v2
+      - 
+        name: Test package
+        run: |
+          # Set release version based on github ref
+          # RELEASE_VERSION=v0.1.2
+          RELEASE_VERSION=$(echo ${GITHUB_REF} | rev | cut -d'/' -f 1 | rev )
+          echo -e "[splice]\nSigLevel = Optional TrustAll\nServer = https://splice-releases.s3.amazonaws.com/splicectl/aur/" >> /etc/pacman.conf
+
+          # Get the package and make sure that the version command prints out the correct version that was set during release
+          sudo pacman -Syu --noconfirm splicectl
+          sudo pacman -Q
+          sudo splicectl version | grep ${RELEASE_VERSION}
