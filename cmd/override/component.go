@@ -28,6 +28,11 @@ type (
 	APIResourceMessage struct {
 		Data string `json:"data"`
 	}
+
+	// APIErrorMessage is a response from splicectl api that details why the request did not work
+	APIErrorMessage struct {
+		Error string `json:"error"`
+	}
 )
 
 func (r Resource) Name() string {
@@ -63,16 +68,31 @@ func (co Component) Resource(name string) (Resource, error) {
 	return co.resources.Resource(name)
 }
 
+// GetError - creates error from string Error field that was parsed from api response
+func (ae *APIErrorMessage) GetError() error {
+	return fmt.Errorf("%s; api request was unsuccesful", ae.Error)
+}
+
+func responseToErrorMessage(body []byte) error {
+	apiErr := &APIErrorMessage{}
+	if err := json.Unmarshal(body, apiErr); err != nil {
+		return err
+	}
+	return nil
+}
+
 func responseToYaml(resp *resty.Response, err error) (map[string]interface{}, error) {
 	// check that request had no errors
 	if err != nil {
 		return nil, err
 	}
 
+	body := resp.Body()
+
 	// unmarshal api response into appropriate struct
 	apiResp := &APIResourceMessage{}
-	if err := json.Unmarshal(resp.Body(), apiResp); err != nil {
-		return nil, err
+	if err := json.Unmarshal(body, apiResp); err != nil {
+		return nil, responseToErrorMessage(body)
 	}
 
 	// unmarshal api response data string into yaml object that represents resource
