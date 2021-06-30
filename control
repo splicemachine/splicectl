@@ -1,0 +1,9 @@
+Package: splicectl
+Version: 0.1.1
+Section: custom
+Priority: optional
+Architecture: all
+Essential: no
+Installed-Size: 38912
+Maintainer: build@splicemachine.com
+Description: The splicectl cli is used to manage features of a SpliceDB Cluster running on Kubernetes.
