@@ -166,15 +166,25 @@ func ListComponents() []string {
 
 // below are a list of common resources shared by multiple components
 var (
+	// xml resources
 	fairScheduler = Resource{name: "fairscheduler.xml"}
 	coreSite      = Resource{name: "core-site.xml"}
 	hdfsSite      = Resource{name: "hdfs-site.xml"}
 	hbaseSite     = Resource{name: "hbase-site.xml"}
-	hbaseEnv      = Resource{name: "hbase-env.sh"}
-	log4j         = Resource{name: "log4j.properties"}
-	shiro         = Resource{name: "shiro.ini"}
-	promJMXAgent  = Resource{name: "prom-jmx-agent-config.yml"}
-	serverProps   = Resource{name: "server.properties"}
+
+	// shell resources
+	kafkaEnv = Resource{name: "kafka-env.sh"}
+	hbaseEnv = Resource{name: "hbase-env.sh"}
+
+	// ini resources
+	shiro = Resource{name: "shiro.ini"}
+
+	// yml resources
+	promJMXAgent = Resource{name: "prom-jmx-agent-config.yml"}
+
+	// properties resources
+	log4j       = Resource{name: "log4j.properties"}
+	serverProps = Resource{name: "server.properties"}
 )
 
 // components holds all of the components that can be overridden through the
@@ -195,7 +205,7 @@ var components = Components{
 	Component{
 		name: "splicedb-kafka-config",
 		resources: Resources{
-			log4j, promJMXAgent, serverProps,
+			log4j, promJMXAgent, serverProps, kafkaEnv,
 		},
 	},
 	Component{
