@@ -45,16 +45,6 @@ Then sync and install splicectl with pacman or your preferred aur wrapper
 pacman -Sy splicectl
 ```
 
-To update the AUR, run `makepkg -s`. Then `repo-add 'splice.db.tar.gz' 'splicectl-v0.1.1-1-x86_64.pkg.tar.zst'`. It will create a few files
-```bash
-splice.db
-splice.db.tar.gz
-splice.files
-splice.files.tar.gz
-splicectl-v0.1.1-1-x86_64.pkg.tar.zst
-```
-Upload those files into S3 and then you can update splicectl.
-
 ##### CentOS/RHEL 7
 Add splice.repo to your `/etc/yum.repos.d/`, make sure to create it if it does not exist yet. 
 Then update your repolist with `yum update`. You should see splice as a now updated repo. 
@@ -70,7 +60,7 @@ yum install splicectl
 ```
 
 #### Ubuntu/Debian
-Copy the splice.list to your `/etc/apt/sources.list.d/` then import the gpg key
+Copy the splice.list to your `/etc/apt/sources.list.d/` and import the gpg key.
 Then run `apt-get update` You should see splice as a repo get updated.
 ```bash
 mkdir -p /etc/apt/sources.list.d/
