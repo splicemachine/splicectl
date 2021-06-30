@@ -169,6 +169,7 @@ var (
 	fairScheduler = Resource{name: "fairscheduler.xml"}
 	coreSite      = Resource{name: "core-site.xml"}
 	hdfsSite      = Resource{name: "hdfs-site.xml"}
+	hbaseSite     = Resource{name: "hbase-site.xml"}
 	hbaseEnv      = Resource{name: "hbase-env.sh"}
 	log4j         = Resource{name: "log4j.properties"}
 	shiro         = Resource{name: "shiro.ini"}
@@ -182,7 +183,7 @@ var components = Components{
 	Component{
 		name: "splicedb-hbase-config",
 		resources: Resources{
-			fairScheduler, hbaseEnv, log4j, shiro,
+			fairScheduler, hbaseEnv, log4j, shiro, hbaseSite,
 		},
 	},
 	Component{
@@ -200,7 +201,7 @@ var components = Components{
 	Component{
 		name: "splicedb-olap-config",
 		resources: Resources{
-			fairScheduler, hbaseEnv, log4j, shiro,
+			fairScheduler, hbaseEnv, log4j, shiro, hbaseSite,
 		},
 	},
 	Component{
@@ -213,6 +214,12 @@ var components = Components{
 		name: "splicedb-hadoop-config",
 		resources: Resources{
 			coreSite, hdfsSite,
+		},
+	},
+	Component{
+		name: "splicedb-spark-config",
+		resources: Resources{
+			hbaseSite,
 		},
 	},
 }.Process()
