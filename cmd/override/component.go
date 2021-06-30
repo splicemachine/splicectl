@@ -167,6 +167,8 @@ func ListComponents() []string {
 // below are a list of common resources shared by multiple components
 var (
 	fairScheduler = Resource{name: "fairscheduler.xml"}
+	coreSite      = Resource{name: "core-site.xml"}
+	hdfsSite      = Resource{name: "hdfs-site.xml"}
 	hbaseEnv      = Resource{name: "hbase-env.sh"}
 	log4j         = Resource{name: "log4j.properties"}
 	shiro         = Resource{name: "shiro.ini"}
@@ -205,6 +207,12 @@ var components = Components{
 		name: "splicedb-olap-config-extra",
 		resources: Resources{
 			hbaseEnv, log4j,
+		},
+	},
+	Component{
+		name: "splicedb-hadoop-config",
+		resources: Resources{
+			coreSite, hdfsSite,
 		},
 	},
 }.Process()
