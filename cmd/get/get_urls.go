@@ -59,7 +59,8 @@ func getURLOutput(cmd *cobra.Command) string {
 	} else if prodOnly, _ := cmd.Flags().GetBool("prod"); prodOnly {
 		return generateBuildURLs()
 	} else {
-		return generateURLsFromNamespaces(ssNameSpace, common.DatabaseName(cmd))
+		dbNamespace, _ := getDBNamespace(cmd)
+		return generateURLsFromNamespaces(ssNameSpace, dbNamespace)
 	}
 }
 
