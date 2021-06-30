@@ -53,8 +53,8 @@ jobs:
         name: Test package
         run: |
           # Set release version based on github ref
-          RELEASE_VERSION=v0.1.2
-          # RELEASE_VERSION=$(echo ${GITHUB_REF} | rev | cut -d'/' -f 1 | rev )
+          # RELEASE_VERSION=v0.1.2
+          RELEASE_VERSION=$(echo ${GITHUB_REF} | rev | cut -d'/' -f 1 | rev )
 
           # Get the package and make sure that the version command prints out the correct version that was set during release
           sudo mkdir -p  /etc/apt/sources.list.d/
