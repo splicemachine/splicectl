@@ -11,6 +11,14 @@ tools.
 
 ## Installation
 
+## Source
+
+```bash
+cd splicectl
+go build
+```
+The splicectl binary will be in your splicectl directory.
+
 ### MacOS
 
 ```bash
@@ -19,8 +27,44 @@ brew install splicemachine/utility/splicectl
 
 ### Linux
 
-TODO: Choose an installer/package manager
-TODO: Write the Linux installation script documentation
+##### Arch Linux
+Add the splice AUR to your /etc/pacman.conf
+```bash
+[splice]
+SigLevel = Optional TrustAll
+Server = https://splice-releases.s3.amazonaws.com/splicectl/aur/
+```
+
+Then sync and install splicectl with pacman or your preferred aur wrapper
+```bash
+sudo pacman -Sy splicectl
+```
+
+To update the AUR, run `makepkg -s`. Then `repo-add 'splice.db.tar.gz' 'splicectl-v0.1.1-1-x86_64.pkg.tar.zst'`. It will create a few files
+```bash
+splice.db
+splice.db.tar.gz
+splice.files
+splice.files.tar.gz
+splicectl-v0.1.1-1-x86_64.pkg.tar.zst
+```
+Upload those files into S3 and then you can update splicectl.
+
+##### CentOS/RHEL 7
+Add splice.repo to your `/etc/yum.repo.d/`. Then update your repolist with `yum update`. You should see splice as a now updated repo. Then install it with
+```bash
+yum install splicectl
+```
+
+To build the rpms, run `rpmbuild -ba splice.spec`. It will then download the source and then create the splicectl rpm in `rpmbuild/RPM/`
+
+#### Ubuntu/Debian
+Copy the splice.list to your `/etc/apt/source.list.d/` then import the gpg key
+`wget -qO - https://splice-releases.s3.amazonaws.com/splicectl/apt/splice.gpg.key | sudo apt-key add -`
+
+Then run `sudo apt-get update` You should see splice as a repo get updated.
+Then you can install splicectl with `sudo apt-get install splicectl`
+
 
 ### Windows
 
