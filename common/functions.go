@@ -2,12 +2,18 @@ package common
 
 import (
 	"encoding/json"
+	"fmt"
+	"os"
 	"sort"
 	"strconv"
 
+	"github.com/mitchellh/go-homedir"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/splicemachine/splicectl/cmd/objects"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
 	"sigs.k8s.io/yaml"
 )
 
@@ -100,4 +106,48 @@ func DatabaseName(cmd *cobra.Command) string {
 		logrus.Warnf("this command will use name: %s", prefName)
 	}
 	return prefName
+}
+
+// RestConfig - create RestConfig for use by kube config
+func RestConfig() (*rest.Config, error) {
+	// We aren't likely to run this INSIDE the K8s cluster, this routine
+	// simply picks up the config from the file system of a running POD.
+	// kubeCfg, err := rest.InClusterConfig()
+	var kubeCfg *rest.Config
+	var err error
+
+	if kubeconfig := os.Getenv("KUBECONFIG"); kubeconfig != "" {
+		kubeCfg, err = clientcmd.BuildConfigFromFlags("", kubeconfig)
+		if err != nil {
+			logrus.Info("No KUBECONFIG ENV")
+			return nil, err
+		}
+	} else {
+		// ENV KUBECONFIG not set, check for ~/.kube/config
+		home, err := homedir.Dir()
+		if err != nil {
+			return nil, err
+		}
+		kubeFile := fmt.Sprintf("%s/%s", home, ".kube/config")
+		if _, err := os.Stat(kubeFile); err != nil {
+			if os.IsNotExist(err) {
+				if os.Args[1] != "version" {
+					logrus.Info("Could not locate the KUBECONFIG file, normally ~/.kube/config")
+					os.Exit(1)
+				}
+				return nil, nil
+			}
+		}
+		kubeCfg, err = clientcmd.BuildConfigFromFlags("", kubeFile)
+	}
+	return kubeCfg, nil
+}
+
+// KubeClient - gets a new kube client by reading from kube config.
+func KubeClient() (*kubernetes.Clientset, error) {
+	cfg, err := RestConfig()
+	if cfg == nil {
+		return nil, err
+	}
+	return kubernetes.NewForConfig(cfg)
 }
