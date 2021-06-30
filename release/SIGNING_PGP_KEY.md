@@ -35,3 +35,4 @@ Currently the apt package is the only one that is being singed with a key, but o
 
 # Upload Key Pair to Vault
 
+- All you need to do is run one command to upload the keys to vault: `vault kv put secret/team/apt_signing_key private=@splice-private.gpg.key public=@splice.gpg.key`

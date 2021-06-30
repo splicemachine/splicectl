@@ -1,13 +1,9 @@
 package cmd
 
 import (
-	"crypto/tls"
-	"crypto/x509"
 	"fmt"
 	"strings"
 
-	"github.com/go-resty/resty/v2"
-	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -17,55 +13,26 @@ var versionCmd = &cobra.Command{
 	Aliases: []string{"v"},
 	Run: func(cmd *cobra.Command, args []string) {
 
-		if !formatOverridden {
-			outputFormat = "yaml"
+		if !c.FormatOverridden {
+			c.OutputFormat = "yaml"
 		}
 
-		switch strings.ToLower(outputFormat) {
+		switch strings.ToLower(c.OutputFormat) {
 		case "raw":
-			fmt.Println(versionJSON)
+			fmt.Println(c.VersionJSON)
 		case "json":
 			// We want to print the JSON in a condensed format
-			fmt.Println(versionJSON)
+			fmt.Println(c.VersionJSON)
 		case "gron":
-			versionDetail.ToGRON()
+			fmt.Println(c.VersionDetail.ToGRON())
 		case "yaml":
-			versionDetail.ToYAML()
+			fmt.Println(c.VersionDetail.ToYAML())
 		case "text", "table":
-			versionDetail.ToTEXT(noHeaders)
+			fmt.Println(c.VersionDetail.ToTEXT(c.NoHeaders))
 		}
 	},
 }
 
-func getVersionInfo() (string, error) {
-	restClient := resty.New()
-	// Check if we've set a caBundle (via --ca-cert parameter)
-	if len(caBundle) > 0 {
-		roots := x509.NewCertPool()
-		ok := roots.AppendCertsFromPEM([]byte(caBundle))
-		if !ok {
-			logrus.Info("Failed to parse CABundle")
-		}
-		restClient.SetTLSClientConfig(&tls.Config{RootCAs: roots})
-	}
-
-	uri := "splicectl"
-	resp, resperr := restClient.R().
-		SetHeader("Content-Type", "application/json").
-		SetHeader("Accept", "application/json").
-		// SetHeader("X-Token-Bearer", authClient.GetTokenBearer()).
-		// SetHeader("X-Token-Session", authClient.GetSessionID()).
-		Get(fmt.Sprintf("%s/%s", apiServer, uri))
-
-	if resperr != nil {
-		logrus.WithError(resperr).Error("Error getting version info")
-		return "", resperr
-	}
-
-	return strings.TrimSuffix(string(resp.Body()[:]), "\n"), nil
-
-}
-
 func init() {
-	rootCmd.AddCommand(versionCmd)
+	RootCmd.AddCommand(versionCmd)
 }

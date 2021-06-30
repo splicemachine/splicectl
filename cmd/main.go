@@ -11,7 +11,15 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/splicemachine/splicectl/auth"
-	"github.com/splicemachine/splicectl/cmd/objects"
+	"github.com/splicemachine/splicectl/cmd/apply"
+	"github.com/splicemachine/splicectl/cmd/config"
+	"github.com/splicemachine/splicectl/cmd/create"
+	"github.com/splicemachine/splicectl/cmd/del"
+	"github.com/splicemachine/splicectl/cmd/get"
+	"github.com/splicemachine/splicectl/cmd/list"
+	"github.com/splicemachine/splicectl/cmd/restart"
+	"github.com/splicemachine/splicectl/cmd/rollback"
+	"github.com/splicemachine/splicectl/cmd/version"
 	"github.com/splicemachine/splicectl/common"
 
 	homedir "github.com/mitchellh/go-homedir"
@@ -19,96 +27,84 @@ import (
 )
 
 var (
-	semVer        string
-	gitCommit     string
-	buildDate     string
-	gitRef        string
-	versionDetail objects.Version
-	versionJSON   string
-	cfgFile       string
-	serverURI     string
+	semVer    string
+	gitCommit string
+	buildDate string
+	gitRef    string
+	cfgFile   string
+	serverURI string
 
 	// semVerReg - gets the semVer portion only, cutting off any other release details
 	semVerReg = regexp.MustCompile(`(v[0-9]+\.[0-9]+\.[0-9]+).*`)
+
+	c = &config.Config{}
 )
 
-// var sessionID string
-// var tokenBearer string
-// var tokenValid bool
-var apiServer string
-var outputFormat string
-var caCert string
-var caBundle string
-var formatOverridden bool
-var noHeaders bool
-var authClient auth.Client
-
-// rootCmd represents the base command when called without any subcommands
+// RootCmd represents the base command when called without any subcommands
 // splicectl doesn't have any functionality, other than to validate our auth
 // token.  A VALID auth token is required to run ANY command other than the
 // 'auth' command.
-var rootCmd = &cobra.Command{
+var RootCmd = &cobra.Command{
 	Use:   "splicectl",
 	Short: "Splice Machine control application for Kubernetes environments",
 	Long: `splicectl is a CLI tool for making managment of Splice Machine
 database clusters under Kubernetes easier to manage.`,
 	Args: cobra.MinimumNArgs(1),
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-
-		if len(caCert) > 0 {
-			if _, err := os.Stat(caCert); err != nil {
+		if len(c.CACert) > 0 {
+			if _, err := os.Stat(c.CACert); err != nil {
 				if os.IsNotExist(err) {
 					logrus.Info("Couldn't read the ca-file, please check the path")
 					os.Exit(1)
 				}
 			}
-			fileBytes, _ := ioutil.ReadFile(caCert)
-			caBundle = strings.TrimSpace(string(fileBytes[:]))
+			fileBytes, _ := ioutil.ReadFile(c.CACert)
+			c.CABundle = strings.TrimSpace(string(fileBytes[:]))
 		} else {
-			caCert = os.Getenv("SPLICECTL_CACERT")
-			if len(caCert) > 0 {
-				if _, err := os.Stat(caCert); err != nil {
+			c.CACert = os.Getenv("SPLICECTL_CACERT")
+			if len(c.CACert) > 0 {
+				if _, err := os.Stat(c.CACert); err != nil {
 					if os.IsNotExist(err) {
 						logrus.Info("Couldn't read the ca-file, please check the path")
 						os.Exit(1)
 					}
 				}
 			}
-			fileBytes, _ := ioutil.ReadFile(caCert)
-			caBundle = strings.TrimSpace(string(fileBytes[:]))
+			fileBytes, _ := ioutil.ReadFile(c.CACert)
+			c.CABundle = strings.TrimSpace(string(fileBytes[:]))
 		}
 
-		apiServer = getIngressDetail()
+		c.ApiServer = getIngressDetail()
 		if len(serverURI) > 0 {
-			apiServer = serverURI
+			c.ApiServer = serverURI
 		}
 
 		// Collect the version info, for use in determining valid commands based on SemVer
-		if apiServer != "" {
-			version, err := getVersionInfo()
+		if c.ApiServer != "" {
+			version, err := c.GetVersionInfo()
 			if err != nil {
 				logrus.WithError(err).Error("Error getting version info")
 			}
 			clientLine := fmt.Sprintf("\"Client\": {\"SemVer\": \"%s\", \"GitCommit\": \"%s\", \"BuildDate\": \"%s\"},", semVer, gitCommit, buildDate)
 			serverLine := fmt.Sprintf("\"Server\": %s},", version)
-			hostLine := fmt.Sprintf("\"Host\": \"%s\"", apiServer)
-			versionJSON = fmt.Sprintf("{\"VersionInfo\": {\n%s\n%s\n%s\n}", clientLine, serverLine, hostLine)
+			hostLine := fmt.Sprintf("\"Host\": \"%s\"", c.ApiServer)
+			c.VersionJSON = fmt.Sprintf("{\"VersionInfo\": {\n%s\n%s\n%s\n}", clientLine, serverLine, hostLine)
 		} else {
 			clientLine := fmt.Sprintf("\"Client\": {\"SemVer\": \"%s\", \"GitCommit\": \"%s\", \"BuildDate\": \"%s\"}}", semVer, gitCommit, buildDate)
-			versionJSON = fmt.Sprintf("{\"VersionInfo\": {%s}", clientLine)
+			c.VersionJSON = fmt.Sprintf("{\"VersionInfo\": {%s}", clientLine)
 		}
-		marsherr := json.Unmarshal([]byte(versionJSON), &versionDetail)
-		if marsherr != nil {
-			logrus.WithError(marsherr).Error("Error decoding json for Version")
+
+		if err := json.Unmarshal([]byte(c.VersionJSON), &c.VersionDetail); err != nil {
+			logrus.WithError(err).Error("Error decoding json for Version")
 		}
 
 		if os.Args[1] != "version" {
 			environment := getEnvironmentName()
-			authClient = auth.NewAuth(environment, common.SessionData{
+			c.AuthClient = auth.NewAuth(environment, common.SessionData{
 				SessionID:  fmt.Sprintf("%s", viper.Get(fmt.Sprintf("%s-session_id", environment))),
 				ValidUntil: fmt.Sprintf("%s", viper.Get(fmt.Sprintf("%s-valid_until", environment))),
 			})
-			isValid := authClient.CheckTokenValidity()
+			isValid := c.AuthClient.CheckTokenValidity()
 			if !isValid && os.Args[1] != "auth" {
 				logrus.Info("Your session has expired, please run the 'auth' again.")
 				os.Exit(1)
@@ -117,43 +113,60 @@ database clusters under Kubernetes easier to manage.`,
 
 		// Validate global parameters here, BEFORE we start to waste time
 		// and run any code.
-		if outputFormat != "" {
-			outputFormat = strings.ToLower(outputFormat)
-			switch outputFormat {
-			case "json":
-			case "gron":
-			case "yaml":
-			case "text":
-			case "table":
-			case "raw":
+		if c.OutputFormat != "" {
+			c.OutputFormat = strings.ToLower(c.OutputFormat)
+			switch c.OutputFormat {
+			case "json", "gron", "yaml", "text", "table", "raw":
+				break
 			default:
 				fmt.Println("Valid options for -o are [json|gron|[text|table]|yaml|raw]")
 				os.Exit(1)
 			}
-			formatOverridden = true
+			c.FormatOverridden = true
 		} else {
-			formatOverridden = false
-			outputFormat = "json"
+			c.FormatOverridden = false
+			c.OutputFormat = "json"
 		}
 	},
+}
+
+func buildRootCmd() *cobra.Command {
+	RootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.splicectl/config.yml)")
+	RootCmd.PersistentFlags().StringVar(&serverURI, "server-uri", "", "override the server uri for the API server http(s)://host.domain.name:overrideport")
+	RootCmd.PersistentFlags().StringVarP(&c.OutputFormat, "output", "o", "", "output types: json, text, yaml, gron")
+	RootCmd.PersistentFlags().BoolVar(&c.NoHeaders, "no-headers", false, "Suppress header output in Text output")
+	RootCmd.PersistentFlags().StringVar(&c.CACert, "cacert", "", "Specify a cacert file to use to authenticate the SSL certificate")
+
+	return RootCmd
+}
+
+func addSubcommands() {
+	RootCmd.AddCommand(
+		apply.InitSubCommands(c),
+		create.InitSubCommands(c),
+		del.InitSubCommands(c),
+		get.InitSubCommands(c),
+		list.InitSubCommands(c),
+		restart.InitSubCommands(c),
+		rollback.InitSubCommands(c),
+		version.InitSubCommands(c),
+	)
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
-	if err := rootCmd.Execute(); err != nil {
+	if err := RootCmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
 }
 
 func init() {
+	addTUIFunctionsToConfig()
+	buildRootCmd()
 	cobra.OnInitialize(initConfig)
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.splicectl/config.yml)")
-	rootCmd.PersistentFlags().StringVar(&serverURI, "server-uri", "", "override the server uri for the API server http(s)://host.domain.name:overrideport")
-	rootCmd.PersistentFlags().StringVarP(&outputFormat, "output", "o", "", "output types: json, text, yaml, gron")
-	rootCmd.PersistentFlags().BoolVar(&noHeaders, "no-headers", false, "Suppress header output in Text output")
-	rootCmd.PersistentFlags().StringVar(&caCert, "cacert", "", "Specify a cacert file to use to authenticate the SSL certificate")
+	addSubcommands()
 }
 
 func initConfig() {

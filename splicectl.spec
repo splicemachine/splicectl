@@ -1,5 +1,5 @@
 Name:           splicectl
-Version:        0.1.1
+Version:        RELEASE_VERSION
 Release:        1%{?dist}
 Summary:        The splicectl cli is used to manage features of a SpliceDB Cluster running on Kubernetes.
 License:        GPLv3+
@@ -9,10 +9,7 @@ URL:            https://github.com/splicemachine/%{name}
 %define debug_package %{nil}
 %undefine _disable_source_fetch
 %global _missing_build_ids_terminate_build 0
-Source0:        https://github.com/splicemachine/%{name}/releases/download/v%{version}/%{name}_linux_amd64.tar.gz
-
-
-BuildRequires: golang
+Source0:        https://github.com/splicemachine/%{name}/releases/download/%{version}/%{name}_linux_amd64.tar.gz
       
 %description 
 The splicectl cli is used to manage features of a SpliceDB Cluster running on Kubernetes.
@@ -28,7 +25,7 @@ mkdir -p $RPM_BUILD_ROOT/usr/local/bin/
 cp splicectl $RPM_BUILD_ROOT/usr/local/bin/splicectl
 
 %clean
-rm -rf $RPM_BUILD_ROOT
+echo $BUILDROOT
 
 %files
 %defattr(-,bin,bin)

@@ -3,8 +3,6 @@ package objects
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
-	"os"
 	"strings"
 
 	"github.com/maahsome/gron"
@@ -27,64 +25,52 @@ type CMUserAccount struct {
 }
 
 // ToJSON - Write the output as JSON
-func (accountList *AccountList) ToJSON() error {
+func (accountList *AccountList) ToJSON() string {
 
 	listJSON, enverr := json.MarshalIndent(accountList, "", "  ")
 	if enverr != nil {
 		logrus.WithError(enverr).Error("Error extracting json")
-		return enverr
-	} else {
-		fmt.Println(string(listJSON[:]))
+		return ""
 	}
-
-	return nil
+	return string(listJSON[:])
 
 }
 
 // ToGRON - Write the output as GRON
-func (accountList *AccountList) ToGRON() error {
+func (accountList *AccountList) ToGRON() string {
 	listJSON, enverr := json.MarshalIndent(accountList, "", "  ")
 	if enverr != nil {
 		logrus.WithError(enverr).Error("Error extracting json")
-		return enverr
+		return ""
 	}
 
 	subReader := strings.NewReader(string(listJSON[:]))
 	subValues := &bytes.Buffer{}
 	ges := gron.NewGron(subReader, subValues)
 	ges.SetMonochrome(false)
-	serr := ges.ToGron()
-	if serr != nil {
+	if serr := ges.ToGron(); serr != nil {
 		logrus.Error("Problem generating gron syntax", serr)
-		return serr
+		return ""
 	}
-	fmt.Println(string(subValues.Bytes()))
-
-	return nil
-
+	return string(subValues.Bytes())
 }
 
 // ToYAML - Write the output as YAML
-func (accountList *AccountList) ToYAML() error {
+func (accountList *AccountList) ToYAML() string {
 
 	listYAML, enverr := yaml.Marshal(accountList)
 	if enverr != nil {
 		logrus.WithError(enverr).Error("Error extracting yaml")
-		return enverr
-	} else {
-		fmt.Println(string(listYAML[:]))
+		return ""
 	}
-	return nil
-
+	return string(listYAML[:])
 }
 
-// ToTEXT - Write the output as TEXT
-func (accountList *AccountList) ToTEXT(noHeaders bool) error {
-
-	var row []string
-
+// ToText - Write the output as Text
+func (accountList *AccountList) ToText(noHeaders bool) string {
+	buf, row := new(bytes.Buffer), make([]string, 0)
 	// ******************** TableWriter *******************************
-	table := tablewriter.NewWriter(os.Stdout)
+	table := tablewriter.NewWriter(buf)
 	if !noHeaders {
 		table.SetHeader([]string{"ACCOUNTID", "EMAIL", "FIRSTNAME", "LASTNAME"})
 		table.SetHeaderAlignment(tablewriter.ALIGN_LEFT)
@@ -105,6 +91,5 @@ func (accountList *AccountList) ToTEXT(noHeaders bool) error {
 	}
 	table.Render()
 
-	return nil
-
+	return buf.String()
 }

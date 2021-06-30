@@ -2,7 +2,6 @@ package objects
 
 import (
 	"encoding/json"
-	"fmt"
 
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
@@ -33,29 +32,21 @@ type DatabaseRequest struct {
 }
 
 // ToJSON - Write the output as JSON
-func (r *DatabaseRequest) ToJSON() error {
-
+func (r *DatabaseRequest) ToJSON() string {
 	rJSON, enverr := json.MarshalIndent(r, "", "  ")
 	if enverr != nil {
 		logrus.WithError(enverr).Error("Error extracting json")
-		return enverr
+		return ""
 	}
-	fmt.Println(string(rJSON[:]))
-
-	return nil
-
+	return string(rJSON[:])
 }
 
 // ToYAML - Write the output as YAML
-func (r *DatabaseRequest) ToYAML() error {
-
+func (r *DatabaseRequest) ToYAML() string {
 	rYAML, enverr := yaml.Marshal(r)
 	if enverr != nil {
 		logrus.WithError(enverr).Error("Error extracting yaml")
-		return enverr
+		return ""
 	}
-	fmt.Println(string(rYAML[:]))
-
-	return nil
-
+	return string(rYAML[:])
 }

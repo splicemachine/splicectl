@@ -33,8 +33,8 @@ var authCmd = &cobra.Command{
 		// 	SessionID:  fmt.Sprintf("%s", viper.Get(fmt.Sprintf("%s-session_id", environment))),
 		// 	ValidUntil: fmt.Sprintf("%s", viper.Get(fmt.Sprintf("%s-valid_until", environment))),
 		// })
-		if pass := authClient.CheckTokenValidity(); pass {
-			sessData, err := json.Marshal(authClient.GetSession())
+		if pass := c.AuthClient.CheckTokenValidity(); pass {
+			sessData, err := json.Marshal(c.AuthClient.GetSession())
 			if err != nil {
 				logrus.WithError(err).Error("Error converting session data to JSON")
 				return
@@ -66,9 +66,9 @@ var authCmd = &cobra.Command{
 func performAuth() (string, error) {
 	restClient := resty.New()
 	// Check if we've set a caBundle (via --ca-cert parameter)
-	if len(caBundle) > 0 {
+	if len(c.CABundle) > 0 {
 		roots := x509.NewCertPool()
-		ok := roots.AppendCertsFromPEM([]byte(caBundle))
+		ok := roots.AppendCertsFromPEM([]byte(c.CABundle))
 		if !ok {
 			logrus.Info("Failed to parse CABundle")
 		}
@@ -79,7 +79,7 @@ func performAuth() (string, error) {
 	resp, resperr := restClient.R().
 		SetHeader("Content-Type", "application/json").
 		SetHeader("Accept", "application/json").
-		Get(fmt.Sprintf("%s/%s", apiServer, uri))
+		Get(fmt.Sprintf("%s/%s", c.ApiServer, uri))
 
 	if resperr != nil {
 		logrus.WithError(resperr).Error("Error getting Default CR Info")
@@ -91,5 +91,5 @@ func performAuth() (string, error) {
 }
 
 func init() {
-	rootCmd.AddCommand(authCmd)
+	RootCmd.AddCommand(authCmd)
 }

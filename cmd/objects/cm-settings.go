@@ -3,7 +3,6 @@ package objects
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"os"
 	"strings"
 
@@ -19,62 +18,47 @@ type CMSettings struct {
 }
 
 // ToJSON - Write the output as JSON
-func (settings *CMSettings) ToJSON() error {
-
+func (settings *CMSettings) ToJSON() string {
 	settingsJSON, enverr := json.MarshalIndent(settings, "", "  ")
 	if enverr != nil {
 		logrus.WithError(enverr).Error("Error extracting json")
-		return enverr
-	} else {
-		fmt.Println(string(settingsJSON[:]))
+		return ""
 	}
-
-	return nil
-
+	return string(settingsJSON[:])
 }
 
 // ToGRON - Write the output as GRON
-func (settings *CMSettings) ToGRON() error {
+func (settings *CMSettings) ToGRON() string {
 	settingsJSON, enverr := json.MarshalIndent(settings, "", "  ")
 	if enverr != nil {
 		logrus.WithError(enverr).Error("Error extracting json")
-		return enverr
+		return ""
 	}
 
 	subReader := strings.NewReader(string(settingsJSON[:]))
 	subValues := &bytes.Buffer{}
 	ges := gron.NewGron(subReader, subValues)
 	ges.SetMonochrome(false)
-	serr := ges.ToGron()
-	if serr != nil {
+	if serr := ges.ToGron(); serr != nil {
 		logrus.Error("Problem generating gron syntax", serr)
-		return serr
+		return ""
 	}
-	fmt.Println(string(subValues.Bytes()))
-
-	return nil
-
+	return string(subValues.Bytes())
 }
 
 // ToYAML - Write the output as YAML
-func (settings *CMSettings) ToYAML() error {
-
+func (settings *CMSettings) ToYAML() string {
 	settingsYAML, enverr := yaml.Marshal(settings)
 	if enverr != nil {
 		logrus.WithError(enverr).Error("Error extracting yaml")
-		return enverr
-	} else {
-		fmt.Println(string(settingsYAML[:]))
+		return ""
 	}
-	return nil
-
+	return string(settingsYAML[:])
 }
 
-// ToTEXT - Write the output as TEXT
-func (settings *CMSettings) ToTEXT(noHeaders bool) error {
-
-	var row []string
-
+// ToText - Write the output as Text
+func (settings *CMSettings) ToText(noHeaders bool) string {
+	buf, row := new(bytes.Buffer), make([]string, 0)
 	// ******************** TableWriter *******************************
 	table := tablewriter.NewWriter(os.Stdout)
 	if !noHeaders {
@@ -98,6 +82,5 @@ func (settings *CMSettings) ToTEXT(noHeaders bool) error {
 	}
 	table.Render()
 
-	return nil
-
+	return buf.String()
 }

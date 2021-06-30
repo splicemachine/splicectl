@@ -1,5 +1,5 @@
 Package: splicectl
-Version: 0.1.1
+Version: RELEASE_VERSION
 Section: custom
 Priority: optional
 Architecture: all
