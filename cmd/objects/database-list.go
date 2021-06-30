@@ -3,8 +3,6 @@ package objects
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
-	"os"
 	"strings"
 
 	"github.com/maahsome/gron"
@@ -95,64 +93,50 @@ func (dbl *DatabaseList) FilterByStatus(active, paused bool) *DatabaseList {
 }
 
 // ToJSON - Write the output as JSON
-func (databaseList *DatabaseList) ToJSON() error {
-
+func (databaseList *DatabaseList) ToJSON() string {
 	dblJSON, enverr := json.MarshalIndent(databaseList, "", "  ")
 	if enverr != nil {
 		logrus.WithError(enverr).Error("Error extracting json")
-		return enverr
-	} else {
-		fmt.Println(string(dblJSON[:]))
+		return ""
 	}
-
-	return nil
-
+	return string(dblJSON[:])
 }
 
 // ToGRON - Write the output as GRON
-func (databaseList *DatabaseList) ToGRON() error {
+func (databaseList *DatabaseList) ToGRON() string {
 	dbJSON, enverr := json.MarshalIndent(databaseList, "", "  ")
 	if enverr != nil {
 		logrus.WithError(enverr).Error("Error extracting json")
-		return enverr
+		return ""
 	}
 
 	subReader := strings.NewReader(string(dbJSON[:]))
 	subValues := &bytes.Buffer{}
 	ges := gron.NewGron(subReader, subValues)
 	ges.SetMonochrome(false)
-	serr := ges.ToGron()
-	if serr != nil {
+	if serr := ges.ToGron(); serr != nil {
 		logrus.Error("Problem generating gron syntax", serr)
-		return serr
+		return ""
 	}
-	fmt.Println(string(subValues.Bytes()))
-
-	return nil
-
+	return string(subValues.Bytes())
 }
 
 // ToYAML - Write the output as YAML
-func (databaseList *DatabaseList) ToYAML() error {
-
+func (databaseList *DatabaseList) ToYAML() string {
 	dblYAML, enverr := yaml.Marshal(databaseList)
 	if enverr != nil {
 		logrus.WithError(enverr).Error("Error extracting yaml")
-		return enverr
-	} else {
-		fmt.Println(string(dblYAML[:]))
+		return ""
 	}
-	return nil
-
+	return string(dblYAML[:])
 }
 
-// ToTEXT - Write the output as TEXT
-func (databaseList *DatabaseList) ToTEXT(noHeaders bool) error {
-
-	var row []string
+// ToText - Write the output as Text
+func (databaseList *DatabaseList) ToText(noHeaders bool) string {
+	buf, row := new(bytes.Buffer), make([]string, 0)
 
 	// ******************** TableWriter *******************************
-	table := tablewriter.NewWriter(os.Stdout)
+	table := tablewriter.NewWriter(buf)
 	if !noHeaders {
 		table.SetHeader([]string{"DATABASE", "NAMESPACE", "STATUS", "CLUSTER_ID"})
 		table.SetHeaderAlignment(tablewriter.ALIGN_LEFT)
@@ -173,6 +157,5 @@ func (databaseList *DatabaseList) ToTEXT(noHeaders bool) error {
 	}
 	table.Render()
 
-	return nil
-
+	return buf.String()
 }

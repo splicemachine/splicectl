@@ -3,8 +3,6 @@ package objects
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
-	"os"
 	"strings"
 
 	"github.com/maahsome/gron"
@@ -26,63 +24,50 @@ type ImageTag struct {
 }
 
 // ToJSON - Write the output as JSON
-func (i *ImageTagList) ToJSON() error {
-
+func (i *ImageTagList) ToJSON() string {
 	imageTagJSON, enverr := json.MarshalIndent(i, "", "  ")
 	if enverr != nil {
 		logrus.WithError(enverr).Error("Error extracting json")
-		return enverr
+		return ""
 	}
-	fmt.Println(string(imageTagJSON[:]))
-
-	return nil
-
+	return string(imageTagJSON[:])
 }
 
 // ToGRON - Write the output as GRON
-func (i *ImageTagList) ToGRON() error {
+func (i *ImageTagList) ToGRON() string {
 	tagJSON, enverr := json.MarshalIndent(i, "", "  ")
 	if enverr != nil {
 		logrus.WithError(enverr).Error("Error extracting json")
-		return enverr
+		return ""
 	}
 
 	subReader := strings.NewReader(string(tagJSON[:]))
 	subValues := &bytes.Buffer{}
 	ges := gron.NewGron(subReader, subValues)
 	ges.SetMonochrome(false)
-	serr := ges.ToGron()
-	if serr != nil {
+	if serr := ges.ToGron(); serr != nil {
 		logrus.Error("Problem generating gron syntax", serr)
-		return serr
+		return ""
 	}
-	fmt.Println(string(subValues.Bytes()))
-
-	return nil
-
+	return string(subValues.Bytes())
 }
 
 // ToYAML - Write the output as YAML
-func (i *ImageTagList) ToYAML() error {
-
+func (i *ImageTagList) ToYAML() string {
 	imageTagYAML, enverr := yaml.Marshal(i)
 	if enverr != nil {
 		logrus.WithError(enverr).Error("Error extracting yaml")
-		return enverr
+		return ""
 	}
-	fmt.Println(string(imageTagYAML[:]))
-
-	return nil
-
+	return string(imageTagYAML[:])
 }
 
-// ToTEXT - Write the output as TEXT
-func (i *ImageTagList) ToTEXT(noHeaders bool) error {
-
-	var row []string
+// ToText - Write the output as Text
+func (i *ImageTagList) ToText(noHeaders bool) string {
+	buf, row := new(bytes.Buffer), make([]string, 0)
 
 	// ******************** TableWriter *******************************
-	table := tablewriter.NewWriter(os.Stdout)
+	table := tablewriter.NewWriter(buf)
 	if !noHeaders {
 		table.SetHeader([]string{"COMPONENT", "DB_CR_IMAGE", "ACTIVE_IMAGE"})
 		table.SetHeaderAlignment(tablewriter.ALIGN_LEFT)
@@ -103,6 +88,5 @@ func (i *ImageTagList) ToTEXT(noHeaders bool) error {
 	}
 	table.Render()
 
-	return nil
-
+	return buf.String()
 }

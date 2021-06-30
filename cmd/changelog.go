@@ -37,5 +37,5 @@ var changelogCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(changelogCmd)
+	RootCmd.AddCommand(changelogCmd)
 }

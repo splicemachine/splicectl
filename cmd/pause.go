@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"crypto/tls"
-	"crypto/x509"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -31,14 +29,12 @@ var pauseCmd = &cobra.Command{
 	option was chosen if more than one were supplied.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		var dberr error
-		var sv semver.Version
-
-		_, sv = versionDetail.RequirementMet("pause")
+		_, sv := c.VersionDetail.RequirementMet("pause")
 
 		message, _ := cmd.Flags().GetString("message")
 		databaseName := common.DatabaseName(cmd)
 		if len(databaseName) == 0 {
-			databaseName, dberr = promptForDatabaseName()
+			databaseName, dberr = PromptForDatabaseName()
 			if dberr != nil {
 				logrus.Fatal("Could not get a list of workspaces", dberr)
 			}
@@ -69,7 +65,7 @@ func displayPauseDatabaseV1(in string) {
 }
 
 func isDatabaseActive(db string) bool {
-	dbJSON, err := getDatabaseList()
+	dbJSON, err := c.GetDatabaseList()
 	if err != nil {
 		logrus.WithError(err).Fatal("Error retreiving ClusterId list")
 	}
@@ -92,30 +88,16 @@ func isDatabaseActive(db string) bool {
 }
 
 func pauseDatabase(db string, msg string) (string, error) {
-	restClient := resty.New()
-	// Check if we've set a caBundle (via --ca-cert parameter)
-	if len(caBundle) > 0 {
-		roots := x509.NewCertPool()
-		ok := roots.AppendCertsFromPEM([]byte(caBundle))
-		if !ok {
-			logrus.Info("Failed to parse CABundle")
-		}
-		restClient.SetTLSClientConfig(&tls.Config{RootCAs: roots})
-	}
-
 	uri := "splicectl/v1/splicedb/splicedatabasepause"
 
 	var resp *resty.Response
 	var resperr error
 
 	reqJSON := fmt.Sprintf("{ \"appId\": \"%s\", \"message\": \"%s\" }", db, msg)
-	resp, resperr = restClient.R().
-		SetHeader("Content-Type", "application/json").
-		SetHeader("Accept", "application/json").
-		SetHeader("X-Token-Bearer", authClient.GetTokenBearer()).
-		SetHeader("X-Token-Session", authClient.GetSessionID()).
+	resp, resperr = c.
+		RestyWithHeaders().
 		SetBody(reqJSON).
-		Post(fmt.Sprintf("%s/%s", apiServer, uri))
+		Post(fmt.Sprintf("%s/%s", c.ApiServer, uri))
 	if resperr != nil {
 		logrus.WithError(resperr).Error("Error getting Default CR Info")
 		return "", resperr
@@ -126,7 +108,7 @@ func pauseDatabase(db string, msg string) (string, error) {
 }
 
 func init() {
-	rootCmd.AddCommand(pauseCmd)
+	RootCmd.AddCommand(pauseCmd)
 
 	// add database name and aliases
 	pauseCmd.Flags().StringP("database-name", "d", "", "Specify the database name")
