@@ -39,7 +39,13 @@ var getLogsCmd = &cobra.Command{
 	Use:   "logs",
 	Short: "Get logs of multiple pods in a workspace",
 	Long: `EXAMPLES
-	splicectl get logs -d splicedb
+	splicectl get logs --workspace splicedb --directory ./logs
+	or
+	splicectl get logs -d splicedb -f ./logs
+
+	By default the selector is set to 'app=hbase', but that can be overridden 
+	using the --selector/-s flag or the --all/-a flag which ignores the selector
+	and grabs all logs from all pods.
 
 	Note: --database-name and -d are the preferred way to supply the database name.
 	However, --database and --workspace can also be used as well. In the event that
