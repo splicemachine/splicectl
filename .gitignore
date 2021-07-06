@@ -15,5 +15,8 @@ dist/*
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
 
+# The private key used for signing packages
+splice-private.gpg.key
+
 # Dependency directories (remove the comment below to include it)
 # vendor/
