@@ -1,6 +1,8 @@
 package list
 
 import (
+	"fmt"
+
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/splicemachine/splicectl/cmd/override"
@@ -20,13 +22,13 @@ var listComponentCmd = &cobra.Command{
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 { // list components
-			logrus.Infof("Components: \n%s", override.ListComponents())
+			fmt.Printf("Overridable Components: \n%s", override.PrettyListComponents())
 		} else { // list resources
 			component, err := override.GetComponent(args[0])
 			if err != nil {
 				logrus.WithError(err).Fatal("could not get component")
 			}
-			logrus.Infof("Resources: \n%s", component.ListResources())
+			fmt.Printf("Overridable Resources: \n%s", component.PrettyListResources())
 		}
 	},
 }

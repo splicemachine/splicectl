@@ -1,6 +1,9 @@
 package override
 
 import (
+	"errors"
+	"fmt"
+
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -41,13 +44,9 @@ func copy(comp, rsrc string, all bool) error {
 		return err
 	}
 	rm, ok := resource.(map[string]interface{})
+	fmt.Println(rm)
 	if !ok {
-		return nil
+		return errors.New("resource was not expected type")
 	}
-	// TODO: make changes to resource, update name and labels etc.
-	_ = rm
-	if err := component.PutOverrideResource(rsrc, rsrc); err != nil {
-		return err
-	}
-	return nil
+	return component.PutOverrideResource(rsrc, rsrc)
 }

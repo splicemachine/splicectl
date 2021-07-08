@@ -3,6 +3,7 @@ package override
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/go-resty/resty/v2"
 	"gopkg.in/yaml.v2"
@@ -64,6 +65,10 @@ func (co Component) ListResources() []string {
 	return co.resources.Strings()
 }
 
+func (co Component) PrettyListResources() string {
+	return prettyStrings(co.ListResources())
+}
+
 func (co Component) Resource(name string) (Resource, error) {
 	return co.resources.Resource(name)
 }
@@ -88,7 +93,7 @@ func responseToYaml(resp *resty.Response, err error) (map[string]interface{}, er
 	}
 
 	body := resp.Body()
-
+	fmt.Println(string(body))
 	// unmarshal api response into appropriate struct
 	apiResp := &APIResourceMessage{}
 	if err := json.Unmarshal(body, apiResp); err != nil {
@@ -112,7 +117,8 @@ func (co Component) GetDefaultResource(name string) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	uri := fmt.Sprintf("splicectl/defaults/components/%s/resources/%s", co.name, resource.name)
+	uri := fmt.Sprintf("splicectl/v1/defaults/components/%s/resources/%s", co.name, resource.name)
+	fmt.Println(fmt.Sprintf("%s/%s", c.ApiServer, uri))
 	data, err := responseToYaml(c.RestyWithHeaders().Get(fmt.Sprintf("%s/%s", c.ApiServer, uri)))
 	return data, nil
 }
@@ -124,7 +130,7 @@ func (co Component) GetOverrideResource(name string) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	uri := fmt.Sprintf("splicectl/overrides/components/%s/resources/%s", co.name, resource.name)
+	uri := fmt.Sprintf("splicectl/v1/overrides/components/%s/resources/%s", co.name, resource.name)
 	data, err := responseToYaml(c.RestyWithHeaders().Get(fmt.Sprintf("%s/%s", c.ApiServer, uri)))
 	return data, nil
 }
@@ -143,7 +149,7 @@ func (co Component) PutOverrideResource(name string, data interface{}) error {
 	apiReq := &APIResourceMessage{
 		Data: string(overrideData),
 	}
-	uri := fmt.Sprintf("splicectl/overrides/components/%s/resources/%s", co.name, resource.name)
+	uri := fmt.Sprintf("splicectl/v1/overrides/components/%s/resources/%s", co.name, resource.name)
 	_, err = c.RestyWithHeaders().SetBody(apiReq).Put(fmt.Sprintf("%s/%s", c.ApiServer, uri))
 	return err
 }
@@ -182,6 +188,19 @@ func GetComponent(name string) (Component, error) {
 // ListComponents - lists the components that are available for override
 func ListComponents() []string {
 	return components.Strings()
+}
+
+func prettyStrings(strs []string) string {
+	sb := strings.Builder{}
+	for _, str := range strs {
+		sb.WriteString(fmt.Sprintf("\t%s\n", str))
+	}
+	return sb.String()
+}
+
+// PrettyListComponents - lists the components that are available for override in a nice format
+func PrettyListComponents() string {
+	return prettyStrings(ListComponents())
 }
 
 // below are a list of common resources shared by multiple components
