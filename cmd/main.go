@@ -17,6 +17,7 @@ import (
 	"github.com/splicemachine/splicectl/cmd/del"
 	"github.com/splicemachine/splicectl/cmd/get"
 	"github.com/splicemachine/splicectl/cmd/list"
+	"github.com/splicemachine/splicectl/cmd/override"
 	"github.com/splicemachine/splicectl/cmd/restart"
 	"github.com/splicemachine/splicectl/cmd/rollback"
 	"github.com/splicemachine/splicectl/cmd/version"
@@ -150,6 +151,7 @@ func addSubcommands() {
 		restart.InitSubCommands(c),
 		rollback.InitSubCommands(c),
 		version.InitSubCommands(c),
+		override.InitSubCommands(c),
 	)
 }
 
