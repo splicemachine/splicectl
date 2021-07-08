@@ -18,8 +18,8 @@ const ApplyCmSettings = "apply_cm-settings"
 
 // CommandVersions - map used to determine compatibility of API server
 var CommandVersions = map[string]string{
-	"override_copy":            "0.1.7",
-	"override_edit":            "0.1.7",
+	"override_copy":            "0.1.10",
+	"override_edit":            "0.1.10",
 	"apply_cm-settings":        "0.1.6",
 	"apply_database-cr":        "0.0.14",
 	"apply_default-cr":         "0.0.14",
