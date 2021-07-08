@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/go-resty/resty/v2"
-	"gopkg.in/yaml.v2"
 )
 
 type (
@@ -83,41 +82,33 @@ func responseToErrorMessage(body []byte) error {
 	if err := json.Unmarshal(body, apiErr); err != nil {
 		return err
 	}
-	return nil
+	return apiErr.GetError()
 }
 
-func responseToYaml(resp *resty.Response, err error) (map[string]interface{}, error) {
+func responseToYaml(resp *resty.Response, err error) (string, error) {
 	// check that request had no errors
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	body := resp.Body()
-	fmt.Println(string(body))
 	// unmarshal api response into appropriate struct
 	apiResp := &APIResourceMessage{}
 	if err := json.Unmarshal(body, apiResp); err != nil {
-		return nil, responseToErrorMessage(body)
+		return "", responseToErrorMessage(body)
 	}
 
-	// unmarshal api response data string into yaml object that represents resource
-	resourceMap := make(map[string]interface{})
-	if err := yaml.Unmarshal([]byte(apiResp.Data), &resourceMap); err != nil {
-		return nil, err
-	}
-
-	// assuming all data has been unmarshalled properly, return it with no error
-	return resourceMap, nil
+	return apiResp.Data, nil
 }
 
 // GetDefaultResource - gets the default resource used by the operator from
 // splicectl/api for the specified component/resource.
-func (co Component) GetDefaultResource(name string) (interface{}, error) {
+func (co Component) GetDefaultResource(dbName, name string) (string, error) {
 	resource, err := co.Resource(name)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
-	uri := fmt.Sprintf("splicectl/v1/defaults/components/%s/resources/%s", co.name, resource.name)
+	uri := fmt.Sprintf("splicectl/v1/defaults/components/%s/resources/%s?database-name=%s", co.name, resource.name, dbName)
 	fmt.Println(fmt.Sprintf("%s/%s", c.ApiServer, uri))
 	data, err := responseToYaml(c.RestyWithHeaders().Get(fmt.Sprintf("%s/%s", c.ApiServer, uri)))
 	return data, nil
@@ -125,31 +116,27 @@ func (co Component) GetDefaultResource(name string) (interface{}, error) {
 
 // GetOverrideResource - gets the override resource used by the operator from
 // splicectl/api for the specified component/resource.
-func (co Component) GetOverrideResource(name string) (interface{}, error) {
+func (co Component) GetOverrideResource(dbName, name string) (string, error) {
 	resource, err := co.Resource(name)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
-	uri := fmt.Sprintf("splicectl/v1/overrides/components/%s/resources/%s", co.name, resource.name)
+	uri := fmt.Sprintf("splicectl/v1/overrides/components/%s/resources/%s?database-name=%s", co.name, resource.name, dbName)
 	data, err := responseToYaml(c.RestyWithHeaders().Get(fmt.Sprintf("%s/%s", c.ApiServer, uri)))
 	return data, nil
 }
 
 // PutOverrideResource - puts (updates) the override resource used by the
 // operator from splicectl/api for the specified component/resource.
-func (co Component) PutOverrideResource(name string, data interface{}) error {
+func (co Component) PutOverrideResource(dbName, name string, data string) error {
 	resource, err := co.Resource(name)
 	if err != nil {
 		return err
 	}
-	overrideData, err := yaml.Marshal(data)
-	if err != nil {
-		return err
-	}
 	apiReq := &APIResourceMessage{
-		Data: string(overrideData),
+		Data: data,
 	}
-	uri := fmt.Sprintf("splicectl/v1/overrides/components/%s/resources/%s", co.name, resource.name)
+	uri := fmt.Sprintf("splicectl/v1/overrides/components/%s/resources/%s?database-name=%s", co.name, resource.name, dbName)
 	_, err = c.RestyWithHeaders().SetBody(apiReq).Put(fmt.Sprintf("%s/%s", c.ApiServer, uri))
 	return err
 }
